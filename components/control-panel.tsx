@@ -5,11 +5,17 @@ import { cn } from "@/lib/utils"
 
 interface ControlPanelProps {
   children: ReactNode
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
+  isMobile?: boolean
 }
 
-export default function ControlPanel({ children }: ControlPanelProps) {
-  const [isOpen, setIsOpen] = useState(false)
-
+export default function ControlPanel({ 
+  children, 
+  isOpen, 
+  setIsOpen, 
+  isMobile = false 
+}: ControlPanelProps) {
   // 監聽 ESC 鍵關閉面板
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -19,50 +25,59 @@ export default function ControlPanel({ children }: ControlPanelProps) {
     }
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
-  }, [])
+  }, [setIsOpen])
+
+  // 根據設備類型決定面板樣式
+  const getPanelClassName = () => {
+    const baseClass = "h-screen bg-white p-6 shadow-lg transition-all duration-300 ease-in-out";
+    
+    if (isMobile) {
+      // 手機端：覆蓋模式
+      return cn(
+        baseClass,
+        "fixed top-0 right-0 z-50",
+        isOpen ? "w-[260px]" : "w-0 p-0 overflow-hidden"
+      );
+    } else {
+      // 桌面端：推移模式
+      return cn(
+        baseClass,
+        "border-l border-gray-200",
+        isOpen ? "w-[400px]" : "w-0 p-0 overflow-hidden"
+      );
+    }
+  };
 
   return (
     <>
-      {/* 漢堡選單按鈕 */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed right-4 top-4 z-50 hover:bg-gray-100/80"
-        onClick={() => setIsOpen(true)}
-      >
-        <Menu className="h-6 w-6" />
-      </Button>
-
-      {/* 遮罩層 */}
-      <div
-        className={cn(
-          "fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
-          isOpen ? "opacity-100 z-40" : "opacity-0 pointer-events-none"
+      {/* 手機端專用的遮罩層 */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    
+      {/* 控制面板 */}
+      <div className={getPanelClassName()}>
+        {isOpen && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold">Control Panel</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-gray-100/80"
+                onClick={() => setIsOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="overflow-y-auto h-[calc(100vh-8rem)]">
+              {children}
+            </div>
+          </>
         )}
-        onClick={() => setIsOpen(false)}
-      />
-
-      {/* 側邊面板 */}
-      <div
-        className={cn(
-          "fixed top-0 right-0 h-full w-80 bg-white p-6 shadow-lg transform transition-all duration-300 ease-in-out z-50",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold">Control Panel</h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-gray-100/80"
-            onClick={() => setIsOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-        <div className="overflow-y-auto h-[calc(100vh-8rem)]">
-          {children}
-        </div>
       </div>
     </>
   )

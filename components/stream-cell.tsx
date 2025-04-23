@@ -2,17 +2,18 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Video, XCircle } from "lucide-react"
+import { Video, XCircle, Check } from "lucide-react"
 import * as Hls from "hls.js"
 
 interface StreamCellProps {
   index: number
-  streamUrl: string | null
+  streamUrl: string
   isRemoveMode: boolean
+  isSelected?: boolean
   onClick: () => void
 }
 
-export default function StreamCell({ index, streamUrl, isRemoveMode, onClick }: StreamCellProps) {
+export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected = false, onClick }: StreamCellProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls.default | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>("")
@@ -221,54 +222,63 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, onClick }: 
       return errorMessage;
     }
     
-    if (!streamUrl) return "";
     return "";
+  };
+
+  // 決定卡片的樣式，根據移除模式和選中狀態
+  const getCardClasses = () => {
+    let classes = "aspect-video overflow-hidden ";
+    
+    if (isRemoveMode) {
+      if (isSelected) {
+        classes += "cursor-pointer ring-2 ring-blue-500 ring-offset-2 bg-blue-50";
+      } else {
+        classes += "cursor-pointer hover:ring-2 hover:ring-gray-400 hover:ring-offset-1";
+      }
+    }
+    
+    return classes;
   };
 
   return (
     <Card
-      className={`aspect-video overflow-hidden ${
-        isRemoveMode && streamUrl ? "cursor-pointer ring-2 ring-red-500 ring-offset-2" : ""
-      }`}
+      className={getCardClasses()}
       onClick={onClick}
     >
       <CardContent className="p-0 h-full flex items-center justify-center relative">
-        {streamUrl ? (
-          <>
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              muted 
-              loop
-              controls={false}
-              className="w-full h-full object-cover bg-slate-900" 
-            />
-            {isRemoveMode && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <XCircle className="w-12 h-12 text-red-500" />
-              </div>
-            )}
-            <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-              Stream {index + 1}
+        <>
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted 
+            loop
+            controls={false}
+            className="w-full h-full object-cover bg-slate-900" 
+          />
+          {isRemoveMode && (
+            <div className={`absolute inset-0 bg-black/40 flex items-center justify-center ${isSelected ? 'opacity-70' : 'opacity-40'}`}>
+              {isSelected ? (
+                <Check className="w-12 h-12 text-blue-400" />
+              ) : (
+                <XCircle className="w-12 h-12 text-red-500 opacity-70" />
+              )}
             </div>
-            {getStatusMessage() && (
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm">
-                {getStatusMessage()}
-              </div>
-            )}
-            {isLoading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center text-gray-400 h-full w-full bg-slate-100">
-            <Video className="w-12 h-12 mb-2" />
-            <span>No Stream</span>
+          )}
+          <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+            Stream {index + 1}
           </div>
-        )}
+          {getStatusMessage() && (
+            <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm">
+              {getStatusMessage()}
+            </div>
+          )}
+          {isLoading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            </div>
+          )}
+        </>
       </CardContent>
     </Card>
   );
