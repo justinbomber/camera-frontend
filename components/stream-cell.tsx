@@ -3,19 +3,21 @@
 import { useEffect, useRef, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Video, XCircle, Check } from "lucide-react"
-import * as Hls from "hls.js"
+import * as HlsModule from "hls.js"
+const Hls = HlsModule.default || HlsModule
 
 interface StreamCellProps {
   index: number
   streamUrl: string
   isRemoveMode: boolean
   isSelected?: boolean
+  isH265?: boolean
   onClick: () => void
 }
 
-export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected = false, onClick }: StreamCellProps) {
+export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected = false, isH265 = false, onClick }: StreamCellProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<Hls.default | null>(null)
+  const hlsRef = useRef<HlsModule.default | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
@@ -86,9 +88,9 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
         setIsLoading(false);
       });
     } 
-    else if (Hls.default.isSupported()) {
+    else if (Hls.isSupported()) {
       // 使用 Hls.js 播放 (Chrome, Firefox, Edge 等)
-      const hls = new Hls.default({
+      const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 90,
@@ -98,28 +100,28 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
       });
       
       hls.attachMedia(videoRef.current);
-      hls.on(Hls.default.Events.MEDIA_ATTACHED, () => {
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
         console.log(`HLS 媒體已附加到視頻元素`);
         hls.loadSource(hlsUrl);
       });
       
-      hls.on(Hls.default.Events.MANIFEST_PARSED, (_event: any, data: any) => {
+      hls.on(Hls.Events.MANIFEST_PARSED, (_event: any, data: any) => {
         console.log(`HLS 清單已解析，可用品質等級: ${data.levels.length}`);
         attemptPlayVideo().catch((err: Error) => {
           console.error("播放失敗:", err);
         });
       });
       
-      hls.on(Hls.default.Events.ERROR, (_event: any, data: any) => {
+      hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
         if (data.fatal) {
           switch(data.type) {
-            case Hls.default.ErrorTypes.NETWORK_ERROR:
+            case Hls.ErrorTypes.NETWORK_ERROR:
               console.error(`HLS 網絡錯誤:`, data.details);
               setErrorMessage(`網絡錯誤: ${data.details}`);
               // 嘗試恢復網絡錯誤
               hls.startLoad();
               break;
-            case Hls.default.ErrorTypes.MEDIA_ERROR:
+            case Hls.ErrorTypes.MEDIA_ERROR:
               console.error(`HLS 媒體錯誤:`, data.details);
               setErrorMessage(`媒體錯誤: ${data.details}`);
               // 嘗試恢復媒體錯誤

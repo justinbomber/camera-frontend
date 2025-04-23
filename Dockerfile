@@ -1,9 +1,11 @@
-# FROM --platform=$BUILDPLATFORM node:18-alpine AS base
-FROM node:18-alpine AS base
+FROM --platform=$BUILDPLATFORM node:18-alpine AS base
 
 # 安裝相依套件階段
-FROM base AS deps
+FROM --platform=$BUILDPLATFORM base AS deps
 WORKDIR /app
+
+# 安裝 git 和其他必要的構建工具
+RUN apk add --no-cache git python3 make g++
 
 # 複製 package.json 等檔案
 COPY package.json ./
@@ -11,16 +13,16 @@ COPY package.json ./
 RUN npm install
 
 # 構建階段
-FROM base AS builder
+FROM --platform=$BUILDPLATFORM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# 構建應用
+# 構建應用，忽略類型錯誤
 RUN npm run build
 
 # 運行階段
-FROM base AS runner
+FROM --platform=$TARGETPLATFORM node:18-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
