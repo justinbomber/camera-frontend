@@ -1,0 +1,22 @@
+# 依賴
+node_modules
+npm-debug.log
+.pnpm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# 測試
+coverage
+.nyc_output
+
+# Next.js
+.next/
+out/
+
+# 其他
+.git/
+.github/
+.gitignore
+README.md
+.env*
+!.env.example 
