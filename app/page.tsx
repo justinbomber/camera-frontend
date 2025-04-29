@@ -1,17 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Menu } from "lucide-react"
+import { Plus, Trash2, Menu, LayoutGrid, Grid2X2, Grid3X3, LayoutGrid as Grid4X4 } from "lucide-react"
 import StreamGrid from "@/components/stream-grid"
 import ControlPanel from "@/components/control-panel"
 import AddStreamDialog from "@/components/add-stream-dialog"
 import { Button } from "@/components/ui/button"
-import Head from 'next/head';
-
-// 在布局组件中
-<Head>
-  <script src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"></script>
-</Head>
+import Script from 'next/script'
 
 // Default streams to load on initial page load
 const DEFAULT_STREAMS = [
@@ -32,6 +27,8 @@ export default function MonitoringDashboard() {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   // 是否為移動設備
   const [isMobile, setIsMobile] = useState(false)
+  // 網格布局
+  const [gridLayout, setGridLayout] = useState<1 | 4 | 9 | 16>(9)
 
   // 檢測設備類型
   useEffect(() => {
@@ -135,29 +132,77 @@ export default function MonitoringDashboard() {
   };
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
+      <Script 
+        src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/missile.js"
+        strategy="beforeInteractive"
+      />
+      <Script 
+        src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"
+        strategy="beforeInteractive"
+      />
+
       {/* 頁面標題區域 */}
       <div className="bg-white shadow-sm py-3 px-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">HLS Stream Monitoring</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hover:bg-gray-100/80"
-          onClick={() => setIsPanelOpen(!isPanelOpen)}
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* 宮格切換按鈕 */}
+          <Button
+            variant={gridLayout === 1 ? "default" : "outline"}
+            size="icon"
+            onClick={() => setGridLayout(1)}
+            className="w-8 h-8"
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={gridLayout === 4 ? "default" : "outline"}
+            size="icon"
+            onClick={() => setGridLayout(4)}
+            className="w-8 h-8"
+          >
+            <Grid2X2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={gridLayout === 9 ? "default" : "outline"}
+            size="icon"
+            onClick={() => setGridLayout(9)}
+            className="w-8 h-8"
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={gridLayout === 16 ? "default" : "outline"}
+            size="icon"
+            onClick={() => setGridLayout(16)}
+            className="w-8 h-8"
+          >
+            <Grid4X4 className="h-4 w-4" />
+          </Button>
+          
+          {/* 菜單按鈕 */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-gray-100/80"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* 主内容區域 - Flex 容器 */}
       <div className="flex flex-1 w-full overflow-hidden">
         {/* 串流網格 - 自動佔據所有可用空間 */}
-        <div className={`flex-grow transition-all duration-300 ease-in-out overflow-auto p-3 ${isMobile && isPanelOpen ? 'hidden' : 'block'}`}>
+        <div className={`flex-grow h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out overflow-hidden ${isMobile && isPanelOpen ? 'hidden' : 'block'}`}>
           <StreamGrid
             streams={streams.filter(stream => stream !== null) as string[]}
             isRemoveMode={isRemoveMode}
             selectedIndices={selectedForRemoval}
             isH265={true}
             onCellClick={toggleStreamSelection}
+            gridLayout={gridLayout}
+            onGridLayoutChange={setGridLayout}
           />
         </div>
 

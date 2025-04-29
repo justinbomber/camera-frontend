@@ -13,36 +13,31 @@
 
 ## 安裝依賴
 
-確保已安裝 h265web.js 用於 H.265 解碼：
+本專案使用h265web.js的CDN版本，不需要額外安裝h265web.js。只需克隆專案後執行：
 
 ```bash
-npm install h265web.js --save
-```
-
-或者通過 CDN 引入：
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"></script>
+npm install
+npm run dev
 ```
 
 ## 使用方法
 
-### 在頁面中引入 h265web.js
+### H.265解碼方式
+
+本專案透過CDN方式加載h265web.js，不需要本地文件：
 
 ```jsx
-// 在頁面或佈局文件中添加腳本
-import Head from 'next/head';
+// 在app/page.tsx或layout.tsx中
+import Script from 'next/script';
 
-export default function Layout({ children }) {
-  return (
-    <>
-      <Head>
-        <script src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js" />
-      </Head>
-      {children}
-    </>
-  );
-}
+<Script 
+  src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/missile.js"
+  strategy="beforeInteractive"
+/>
+<Script 
+  src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"
+  strategy="beforeInteractive"
+/>
 ```
 
 ### 使用 StreamGrid 顯示 H.265 視頻
@@ -119,5 +114,5 @@ export default function SingleCamera() {
 
 - 如果視頻無法播放，請檢查控制台錯誤信息
 - 確認流 URL 是否正確，並且服務器支持 CORS
-- 對於 H.265 播放問題，確保 h265web.js 已正確載入
+- 對於 H.265 播放問題，確保瀏覽器支援 WebAssembly
 - 對於卡頓問題，請考慮降低視頻分辨率或使用輔碼流
