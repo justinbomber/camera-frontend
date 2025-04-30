@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef } from 'react'
-import Script from 'next/script'
 import { Card } from '@/components/ui/card'
 
 interface H265PlayerProps {
@@ -60,22 +59,12 @@ export default function H265Player({
   }, [videoUrl, width, height, token])
 
   return (
-    <>
-      <Script 
-        src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/missile.js"
-        strategy="beforeInteractive"
+    <Card className="overflow-hidden">
+      <div 
+        ref={playerRef}
+        style={{ width: width, height: height }}
+        className="bg-black"
       />
-      <Script 
-        src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"
-        strategy="beforeInteractive"
-      />
-      <Card className="overflow-hidden">
-        <div 
-          ref={playerRef}
-          style={{ width: width, height: height }}
-          className="bg-black"
-        />
-      </Card>
-    </>
+    </Card>
   )
 } 

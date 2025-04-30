@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  basePath: '/mainpage',
   // 添加配置以允許來自其他IP地址的訪問
   async headers() {
     return [
@@ -29,7 +28,28 @@ const nextConfig = {
             key: 'Cross-Origin-Embedder-Policy',
             value: 'require-corp',
           },
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          },
         ],
+      },
+    ]
+  },
+  // 修改重定向配置
+  async redirects() {
+    return [
+      // 將根目錄重定向到 /mainpage
+      {
+        source: '/',
+        destination: '/mainpage',
+        permanent: true,
+      },
+      // 將所有不是 mainpage 的路徑重定向到 404 頁面
+      {
+        source: '/:path((?!mainpage).*)',
+        destination: '/not-found',
+        permanent: false,
       },
     ]
   },

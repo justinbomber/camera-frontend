@@ -6,7 +6,6 @@ import StreamGrid from "@/components/stream-grid"
 import ControlPanel from "@/components/control-panel"
 import AddStreamDialog from "@/components/add-stream-dialog"
 import { Button } from "@/components/ui/button"
-import Script from 'next/script'
 
 // Default streams to load on initial page load
 const DEFAULT_STREAMS = [
@@ -130,17 +129,9 @@ export default function MonitoringDashboard() {
       return `${baseClass} ${isPanelOpen ? 'mr-[260px]' : ''}`;
     }
   };
+  
   return (
     <div className="flex flex-col h-screen bg-gray-100 overflow-hidden">
-      <Script 
-        src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/missile.js"
-        strategy="beforeInteractive"
-      />
-      <Script 
-        src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"
-        strategy="beforeInteractive"
-      />
-
       {/* 頁面標題區域 */}
       <div className="bg-white shadow-sm py-3 px-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">HLS Stream Monitoring</h1>
@@ -245,4 +236,4 @@ export default function MonitoringDashboard() {
       <AddStreamDialog isOpen={isAddDialogOpen} onClose={() => setIsAddDialogOpen(false)} onAdd={addStream} />
     </div>
   )
-}
+} 

@@ -3,9 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Video, XCircle, Check } from "lucide-react"
-import * as HlsModule from "hls.js"
-import H265webjs from "h265web.js/dist/index"
-const Hls = HlsModule.default || HlsModule
 
 interface StreamCellProps {
   index: number
@@ -19,8 +16,8 @@ interface StreamCellProps {
 
 export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected = false, isH265 = false, isEmpty = false, onClick }: StreamCellProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const hlsRef = useRef<HlsModule.default | null>(null)
-  const h265PlayerRef = useRef<H265webjs | null>(null)
+  const hlsRef = useRef<any | null>(null)
+  const h265PlayerRef = useRef<any | null>(null)
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -72,16 +69,23 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
     const video = videoRef.current;
     if (!streamUrl || !video) return;
 
-    // 先清理舊的 HLS 實例
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
+    let Hls: any = null;
+    
+    // 動態導入hls.js
+    const loadHls = async () => {
+      try {
+        const HlsModule = await import('hls.js');
+        Hls = HlsModule.default;
+        initPlayer();
+      } catch (error) {
+        console.error('Failed to load hls.js:', error);
+        setErrorMessage('無法載入播放器庫');
+        setIsLoading(false);
+      }
+    };
 
-    setIsLoading(true);
-    setErrorMessage('');
-
-    const initializePlayer = async () => {
+    // 初始化播放器
+    const initPlayer = async () => {
       try {
         // 檢測串流編碼格式
         const isStreamH265 = await detectStreamCodec(streamUrl);
@@ -92,7 +96,8 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
             h265PlayerRef.current.destroy();
           }
           
-          const h265Player = new H265webjs({
+          // 使用全局的H265webjs對象
+          const h265Player = new (window as any).H265webjs({
             player: video,
             debug: true,
             url: streamUrl,
@@ -124,6 +129,10 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
               attemptPlayVideo().catch((error: Error) => {
                 console.error("播放失敗:", error);
               });
+              // 自動定位到最後一秒
+              if (video.duration && video.duration > 1) {
+                video.currentTime = video.duration - 1;
+              }
             });
             video.addEventListener('error', (error) => {
               console.error(`視頻錯誤:`, error);
@@ -131,8 +140,8 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
               setIsLoading(false);
             });
           } 
-          else if (Hls.isSupported()) {
-            let hls: HlsModule.default | null = null;
+          else if (Hls && Hls.isSupported()) {
+            let hls: any = null;
 
             const reconnectHLS = () => {
               console.log('嘗試重新連接HLS串流...');
@@ -165,7 +174,14 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
                     break;
                 }
               } else {
-                console.warn(`HLS 非致命錯誤:`, data);
+                if (data.details && data.details.includes('CHUNK_DEMUXER_ERROR_APPEND_FAILED')) {
+                  // 直接停止並顯示錯誤，不再重連
+                  setErrorMessage('影片解碼失敗：CHUNK_DEMUXER_ERROR_APPEND_FAILED，請檢查串流來源或重新整理頁面');
+                  setIsLoading(false);
+                  return;
+                } else {
+                  console.warn(`HLS 非致命錯誤:`, data);
+                }
               }
               setIsLoading(false);
             };
@@ -175,6 +191,9 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
               enableWorker: true,
               lowLatencyMode: true,
               backBufferLength: 90,
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              appendErrorMaxRetry: 5,
               xhrSetup: (xhr: XMLHttpRequest) => {
                 xhr.withCredentials = false;
               }
@@ -193,8 +212,9 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
               console.log(`HLS 清單已解析`);
               clearReconnectTimer();
               attemptPlayVideo().then(() => {
-                if (video.duration) {
-                  video.currentTime = video.duration;
+                // 自動定位到最後一秒
+                if (video.duration && video.duration > 1) {
+                  video.currentTime = video.duration - 1;
                 }
               }).catch((err: Error) => {
                 console.error("播放失敗:", err);
@@ -218,7 +238,17 @@ export default function StreamCell({ index, streamUrl, isRemoveMode, isSelected 
       }
     }
 
-    initializePlayer();
+    // 先清理舊的 HLS 實例
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+    
+    // 載入hls.js
+    loadHls();
 
     // 創建並管理事件監聽器
     const eventListeners = new Map();
