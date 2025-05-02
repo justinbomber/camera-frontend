@@ -13,6 +13,10 @@ const DEFAULT_STREAMS = [
   "http://streamcamkeelong.mooo.com/camera002",
   "http://streamcamkeelong.mooo.com/camera003",
   "http://streamcamkeelong.mooo.com/camera004",
+  "http://streamcamkeelong.mooo.com/camera005",
+  "http://streamcamkeelong.mooo.com/camera006",
+  "http://streamcamkeelong.mooo.com/camera007",
+  "http://streamcamkeelong.mooo.com/camera008"
 ]
 
 export default function MonitoringDashboard() {

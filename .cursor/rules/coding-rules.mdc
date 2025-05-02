@@ -1,0 +1,143 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Coding 規範與最佳實踐
+
+以下章節以與「UI 設計主要原則」相同的風格呈現，並進一步延伸，使開發流程與使用者體驗（UX）達到最佳化。在本專案中，我們採用 Next.js（基於 React）作為核心框架，且「使用者體驗」為最高優先。
+
+---
+
+### 1. 專案結構與模組化
+
+1.1. **Root 目錄**
+
+* `pages/`：使用 Next.js 約定，放置路由頁面，建議以功能或角色（admin、user）作子資料夾劃分。
+* `app/`（若使用 App Router）：依功能分域，並善用 layout.js 進行全域佈局。
+* `components/`：可重用元件，每個元件一個資料夾，包含 `index.tsx`、`styles.module.css` 與 `__tests__`。
+* `lib/`、`utils/`：工具函式、串流邏輯、共用 Hook。
+* `public/`：靜態資源（logo、icon、預設海報圖）。
+
+1.2. **分層明確**
+
+* **Presentation**（純 UI）
+* **Container**（邏輯、state 管理）
+* **Service**（串流連線、API 呼叫）
+
+---
+
+### 2. 命名慣例與程式碼風格
+
+2.1. **檔案與資料夾名稱**
+
+* 小駝峰（camelCase）或連字符（kebab-case），一致即可。
+* React 元件檔案必須以大駝峰（PascalCase）命名。
+
+2.2. **變數與函式**
+
+* 只在必要處使用 any，全面啟用嚴格模式 (`"strict": true`)。
+* Hook 皆以 `useXxx` 命名；事件處理器建議 `handleXxx`。
+
+2.3. **程式碼格式化**
+
+* ESLint + Prettier，一律自動化執行。
+* 單一責任原則（SRP）。
+
+---
+
+### 3. TypeScript 與型別安全
+
+* **嚴格模式**：`noImplicitAny`、`strictNullChecks`。
+* **共用型別定義**：集中於 `types/` 或 `@types/` 目錄。
+* **React 元件型別**：`FC<Props>` 或自定義 `ComponentType`，明確標注 `children`。
+
+---
+
+### 4. Next.js 特有規範
+
+4.1. **Data Fetching**
+
+* 具 SSR 需求頁面使用 `getServerSideProps`，無需即時請求者才用 `getStaticProps + ISR`。
+* 前端互動資料採用 SWR 或 React Query，並設定適當 cache 時間與 revalidation。
+
+4.2. **API 路由**
+
+* 所有後端介面（如串流 Token、歷史列表）集中於 `pages/api/`，並寫入型別保護。
+
+4.3. **最佳化**
+
+* 圖片使用 Next.js `<Image>`，自動進行 lazy loading 與尺寸優化。
+* Link 採 `<Link>` 並開啟預取（`prefetch={true}`）。
+
+---
+
+### 5. Component 設計與可重用性
+
+* **原子化元件**：Button、Card、Spinner、ErrorBoundary 等基礎元件要獨立且通用。
+* **組合式設計**：使用 props.children、render props 或 slot 使元件可擴充。
+* **Context 控制**：全域設定（主題 mode、語言包）透過 React Context 管理。
+
+---
+
+### 6. 狀態管理與資料獲取
+
+* **全域狀態**：僅限使用 React Context + useReducer，或 Recoil/MobX（視團隊需求）。
+* **串流狀態**：集中於 `lib/streamService.ts`，並提供 `connect()`、`disconnect()`、`reconnect()` 等 API。
+
+---
+
+### 7. 串流連線與重連策略
+
+* **自動重連**：
+
+  1. 連線失敗後每 3 秒嘗試重連，至多重試 5 次。
+  2. 連續失敗超過兩次，顯示全域 Toast 警告並提供「重新連線」按鈕。
+* **Heartbeat 檢測**：每 10 秒發送一次心跳訊號，確保後端準時回應。
+
+---
+
+### 8. 效能優化與懶加載
+
+* **動態載入**：`next/dynamic`，對大型元件（如 StreamCellMerged）在 viewport 進入時載入。
+* **圖片與動畫**：Pixi.js 相關資源使用 offscreen canvas 或 Web Worker。
+* **Bundle 分析**：定期執行 `next build && next analyze`，檢視前三大包件並拆分。
+
+---
+
+### 9. 可及性（Accessibility）
+
+* **ARIA 標籤**：所有可互動元素（按鈕、表單）必須加上 `aria-label`。
+* **鍵盤導航**：確保 Tab 索引正確，Modal、Drawer 可被 ESC 關閉。
+* **對比標準**：文字對比度符合 WCAG AA，且在暗色／亮色模式下皆檢測通過。
+
+---
+
+### 11. 文件與註解
+
+* **JSDoc / TSDoc**：所有公開函式、Hook 加註明用途、參數與回傳值。
+* **README**：補齊專案啟動、開發流程、部署指引與目錄結構說明。
+* **CHANGELOG**：依照 Keep a Changelog 格式維護版本紀錄。
+
+---
+
+## 延伸：進一步優化 UX 的建議
+
+* **Skeleton Screen**：在 HLS manifest 載入期間顯示骨架屏，減低視覺延遲。
+* **快速切換**：使用 Link 預取並將主要頁面路由設置為單頁切換動畫（Framer Motion）。
+* **錯誤邊界**：於 StreamCellMerged 外層放置 ErrorBoundary，遇錯能自動嘗試重連或顯示友善提示。
+* **離線緩存**：採用 Service Worker 快取常用靜態資源與配置，提供基本離線體驗。
+* **記憶偏好**：自動儲存使用者的暗／亮模式、字體大小、畫面佈局偏好，跨裝置同步。
+* **使用者行為分析**：結合 Web Vitals，監測首屏時間（FCP）、互動準備時間（TTI），定期優化瓶頸。
+* **可視化監測**：串流的連線狀態（Latency、Buffer）以小型儀表板方式呈現在畫面角落，便於即時調整。
+
+
+# UI設計主要原則
+UI 框架，遵循以下原則：
+1. 中英文分別使用 Noto Sans TC 與 Inter 字體，並採用 font-display: swap。
+2. 採用 8px spacing grid，支援響應式設計與暗色模式。
+3. 主色與輔色使用 HSL 格式設計，可根據 CSS prefers-color-scheme 切換。
+4. 元件設計使用 shadcn/ui，並加上 framer-motion 的過場動畫。
+5. 導入 pixi.js 作為背景視覺引擎，用來創造粒子動態與光暈特效。
+6. 整體風格偏向 Glassmorphism，留白充分，字體大且清晰。
+7. 設計符合 WCAG AA 對比標準，能流暢在行動裝置與桌面上顯示。
