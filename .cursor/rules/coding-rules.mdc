@@ -3,11 +3,22 @@ description:
 globs: 
 alwaysApply: true
 ---
+## mcp tools 調用
+1. 在做所有事情之前一定要先使用sequential thinking 思考過
+
+
 ## Coding 規範與最佳實踐
 
 以下章節以與「UI 設計主要原則」相同的風格呈現，並進一步延伸，使開發流程與使用者體驗（UX）達到最佳化。在本專案中，我們採用 Next.js（基於 React）作為核心框架，且「使用者體驗」為最高優先。
 
 ---
+
+# 串流方式（不能更改）
+• H.265 → h265web.js  
+• HLS (H.264) → 先嘗試原生 <video> 播放，fallback 用 hls.js。
+
+
+上面的串流方式在h264及h265分別采用上面的方式不能更改，只能在連綫或重連機制上面做微調。
 
 ### 1. 專案結構與模組化
 

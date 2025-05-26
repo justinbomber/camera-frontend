@@ -1,0 +1,64 @@
+.panel {
+  @apply h-screen bg-white p-6 shadow-lg transition-all duration-300 ease-in-out;
+}
+
+.mobilePanel {
+  @apply fixed top-0 right-0 z-50;
+}
+
+.desktopPanel {
+  @apply border-l border-gray-200 fixed right-0 z-50;
+  top: 4rem; /* 配合頁面標題高度 */
+  height: calc(100vh - 4rem);
+}
+
+.open {
+  @apply w-[320px];
+}
+
+.closed {
+  @apply w-0 p-0 overflow-hidden;
+}
+
+.overlay {
+  @apply fixed inset-0 bg-black/30 backdrop-blur-sm z-40;
+}
+
+.desktopBackgroundBlur {
+  @apply fixed inset-0 bg-black/20 backdrop-blur-sm z-30;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease-in-out;
+}
+
+.header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.title {
+  @apply text-lg font-semibold text-black;
+}
+
+.closeButton {
+  @apply hover:bg-gray-100/80 text-black;
+}
+
+.closeIcon {
+  @apply h-5 w-5 text-black;
+}
+
+.content {
+  @apply overflow-y-auto h-[calc(100vh-8rem)];
+}
+
+/* Mobile specific styles */
+@media (max-width: 768px) {
+  .open {
+    @apply w-[320px];
+  }
+  
+  .desktopPanel {
+    @apply relative border-l-0;
+    top: 0;
+    height: 100vh;
+  }
+} 

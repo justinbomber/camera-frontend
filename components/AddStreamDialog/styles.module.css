@@ -1,0 +1,19 @@
+.dialog {
+  @apply sm:max-w-md;
+}
+
+.content {
+  @apply grid gap-4 py-4;
+}
+
+.inputContainer {
+  @apply grid gap-2;
+}
+
+.alert {
+  @apply mt-2;
+}
+
+.alertIcon {
+  @apply h-4 w-4;
+} 

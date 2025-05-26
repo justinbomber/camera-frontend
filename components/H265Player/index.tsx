@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
+import styles from './styles.module.css'
 
 interface H265PlayerProps {
   videoUrl: string
@@ -59,11 +60,11 @@ export default function H265Player({
   }, [videoUrl, width, height, token])
 
   return (
-    <Card className="overflow-hidden">
+    <Card className={styles.container}>
       <div 
         ref={playerRef}
         style={{ width: width, height: height }}
-        className="bg-black"
+        className={styles.player}
       />
     </Card>
   )

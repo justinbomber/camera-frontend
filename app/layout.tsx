@@ -1,6 +1,9 @@
+import { Inter } from 'next/font/google';
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
-import Script from 'next/script'
+import ClientLayout from './client-layout'
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -10,12 +13,12 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'WebRTC Stream Monitoring',
-  description: 'Monitor multiple WebRTC streams in real-time',
+  title: '攝影機串流前端',
+  description: '支持H.264和H.265的攝影機串流前端介面',
   other: {
-    'apple-mobile-web-app-capable': 'yes',
-    'mobile-web-app-capable': 'yes'
-  }
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
+  },
 }
 
 export default function RootLayout({
@@ -24,18 +27,18 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="zh-TW">
       <head>
-        <Script 
-          src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/missile.js"
-          strategy="beforeInteractive"
-        />
-        <Script 
-          src="https://cdn.jsdelivr.net/npm/h265web.js@latest/dist/h265webjs.js"
-          strategy="beforeInteractive"
-        />
+        <link rel="manifest" href="/manifest.json" />
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
       </head>
-      <body>{children}</body>
+      <body className={`${inter.className} font-sans`}>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+      </body>
     </html>
   )
 } 

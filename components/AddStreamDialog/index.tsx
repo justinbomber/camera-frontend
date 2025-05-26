@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import styles from "./styles.module.css"
 
 interface AddStreamDialogProps {
   isOpen: boolean
@@ -45,13 +46,13 @@ export default function AddStreamDialog({ isOpen, onClose, onAdd }: AddStreamDia
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={styles.dialog}>
         <DialogHeader>
           <DialogTitle>Add New Stream</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
+        <div className={styles.content}>
+          <div className={styles.inputContainer}>
             <Label htmlFor="stream-url">WebRTC Stream URL</Label>
             <Input
               id="stream-url"
@@ -65,8 +66,8 @@ export default function AddStreamDialog({ isOpen, onClose, onAdd }: AddStreamDia
           </div>
 
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+            <Alert variant="destructive" className={styles.alert}>
+              <AlertCircle className={styles.alertIcon} />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
@@ -81,4 +82,4 @@ export default function AddStreamDialog({ isOpen, onClose, onAdd }: AddStreamDia
       </DialogContent>
     </Dialog>
   )
-}
+} 

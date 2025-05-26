@@ -1,0 +1,325 @@
+/* 主容器 */
+.container {
+  @apply flex flex-col h-full w-full gap-4 p-4;
+  min-height: 100vh;
+}
+
+/* 播放器卡片 */
+.playerCard {
+  @apply relative overflow-hidden;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  /* 保持16:9比例，但允許內容決定實際高度 */
+  min-height: 40vh;
+  max-height: 60vh;
+}
+
+.playerContent {
+  @apply relative w-full h-full p-0 overflow-hidden;
+}
+
+/* 影片元素 - 保持原始比例 */
+.video {
+  @apply w-full h-full;
+  object-fit: contain; /* 改為contain來保持比例 */
+  background-color: #000;
+  border-radius: 16px;
+  transition: filter 0.3s ease;
+}
+
+/* 狀態指示器 */
+.statusIndicator {
+  @apply absolute top-4 right-4 z-10 flex items-center gap-2;
+  @apply bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2;
+}
+
+.statusText {
+  @apply text-xs text-white font-medium;
+}
+
+/* 攝影機資訊 */
+.cameraInfo {
+  @apply absolute top-4 left-4 z-10;
+  @apply bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2;
+}
+
+.cameraName {
+  @apply text-sm text-white font-medium;
+}
+
+/* Loading 覆蓋層 */
+.loadingOverlay {
+  @apply absolute inset-0 z-20;
+  @apply flex flex-col items-center justify-center;
+  @apply bg-black/20 backdrop-blur-sm;
+  border-radius: 16px;
+}
+
+.loadingCanvas {
+  @apply rounded-xl;
+  width: 80px;
+  height: 80px;
+}
+
+.loadingText {
+  @apply mt-4 text-sm text-white font-medium text-center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 錯誤覆蓋層 */
+.errorOverlay {
+  @apply absolute inset-0 z-20;
+  @apply flex items-center justify-center;
+  @apply bg-black/30 backdrop-blur-sm;
+  border-radius: 16px;
+}
+
+.errorContent {
+  @apply text-center p-6;
+}
+
+.errorIcon {
+  @apply w-8 h-8 text-red-400 mx-auto mb-3;
+}
+
+.errorMessage {
+  @apply text-sm text-white font-medium;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 切換按鈕 */
+.toggleButton {
+  @apply w-full flex items-center justify-between p-4;
+  @apply text-gray-700 bg-white/80 backdrop-blur-sm;
+  @apply border border-gray-200/50 hover:bg-white/90;
+  @apply transition-all duration-200;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.toggleIcon {
+  @apply w-5 h-5 ml-2;
+}
+
+/* 串流列表卡片 */
+.streamListCard {
+  @apply w-full;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+  /* 防止滾動穿透 */
+  position: relative;
+  z-index: 50;
+  /* 確保觸控事件正確處理 */
+  touch-action: manipulation;
+}
+
+.streamListContent {
+  @apply p-4;
+  /* 防止內容超出邊界 */
+  overflow: hidden;
+}
+
+.streamList {
+  @apply flex flex-col gap-2;
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 串流按鈕 */
+.streamButton {
+  @apply relative w-full flex items-center justify-start p-4;
+  @apply text-left transition-all duration-200;
+  @apply hover:bg-gray-100/80;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.streamButtonActive {
+  @apply bg-blue-50/80 border-blue-200/50 text-blue-700;
+  @apply hover:bg-blue-100/80;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.streamButtonIcon {
+  @apply w-5 h-5 mr-3 flex-shrink-0;
+}
+
+.streamButtonText {
+  @apply flex-1 font-medium;
+}
+
+.activeIndicator {
+  @apply absolute right-4 top-1/2 transform -translate-y-1/2;
+  @apply w-2 h-2 bg-blue-500 rounded-full;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+}
+
+/* 空狀態 */
+.emptyCard {
+  @apply flex-1 flex items-center justify-center;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+}
+
+.emptyContent {
+  @apply flex flex-col items-center justify-center p-8;
+}
+
+.emptyIcon {
+  @apply w-16 h-16 text-gray-400 mb-4;
+}
+
+.emptyText {
+  @apply text-gray-500 text-lg font-medium;
+}
+
+/* 動畫 */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 自定義滾動條 */
+.streamList::-webkit-scrollbar {
+  width: 8px;
+}
+
+.streamList::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+  margin: 4px 0;
+}
+
+.streamList::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 20px;
+}
+
+.streamList::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+.streamList::-webkit-scrollbar-thumb:active {
+  @apply bg-gray-600;
+}
+
+/* 暗色模式支援 */
+@media (prefers-color-scheme: dark) {
+  .playerCard {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .toggleButton {
+    @apply text-white bg-black/20;
+    @apply border-white/10 hover:bg-black/30;
+  }
+  
+  .streamListCard {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .streamButton {
+    @apply text-white hover:bg-white/10;
+  }
+  
+  .streamButtonActive {
+    @apply bg-blue-900/30 border-blue-400/30 text-blue-300;
+    @apply hover:bg-blue-900/40;
+  }
+  
+  .emptyCard {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .emptyIcon {
+    @apply text-gray-600;
+  }
+  
+  .emptyText {
+    @apply text-gray-400;
+  }
+  
+  /* 暗色模式下的滾動條優化 */
+  .streamList::-webkit-scrollbar-track {
+    @apply bg-gray-800;
+  }
+  
+  .streamList::-webkit-scrollbar-thumb {
+    @apply bg-gray-600;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+  }
+  
+  .streamList::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+  
+  .streamList::-webkit-scrollbar-thumb:active {
+    @apply bg-gray-400;
+  }
+}
+
+/* 橫屏模式和小螢幕優化 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .container {
+    @apply gap-2 p-2;
+  }
+  
+  .toggleButton {
+    @apply p-3;
+  }
+  
+  .cameraInfo,
+  .statusIndicator {
+    @apply top-2;
+  }
+  
+  .cameraInfo {
+    @apply left-2;
+  }
+  
+  .statusIndicator {
+    @apply right-2;
+  }
+  
+  /* 橫屏時進一步限制列表高度 */
+  .streamList {
+    max-height: min(30vh, 200px);
+  }
+}
+
+/* 手機端專用優化 */
+@media (max-height: 667px) {
+  .streamList {
+    max-height: min(35vh, 250px);
+  }
+}
+
+@media (max-height: 568px) {
+  .container {
+    @apply gap-3 p-3;
+  }
+  
+  .streamList {
+    max-height: min(30vh, 200px);
+  }
+} 

@@ -2,6 +2,7 @@ import { useState, useEffect, type ReactNode } from "react"
 import { X, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import styles from "./styles.module.css"
 
 interface ControlPanelProps {
   children: ReactNode
@@ -29,21 +30,19 @@ export default function ControlPanel({
 
   // 根據設備類型決定面板樣式
   const getPanelClassName = () => {
-    const baseClass = "h-screen bg-white p-6 shadow-lg transition-all duration-300 ease-in-out";
-    
     if (isMobile) {
       // 手機端：覆蓋模式
       return cn(
-        baseClass,
-        "fixed top-0 right-0 z-50",
-        isOpen ? "w-[260px]" : "w-0 p-0 overflow-hidden"
+        styles.panel,
+        styles.mobilePanel,
+        isOpen ? styles.open : styles.closed
       );
     } else {
       // 桌面端：推移模式
       return cn(
-        baseClass,
-        "border-l border-gray-200",
-        isOpen ? "w-[400px]" : "w-0 p-0 overflow-hidden"
+        styles.panel,
+        styles.desktopPanel,
+        isOpen ? styles.open : styles.closed
       );
     }
   };
@@ -53,7 +52,15 @@ export default function ControlPanel({
       {/* 手機端專用的遮罩層 */}
       {isMobile && isOpen && (
         <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+          className={styles.overlay}
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* 桌面端專用的背景模糊遮罩層 */}
+      {!isMobile && isOpen && (
+        <div 
+          className={styles.desktopBackgroundBlur}
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -62,18 +69,18 @@ export default function ControlPanel({
       <div className={getPanelClassName()}>
         {isOpen && (
           <>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Control Panel</h2>
+            <div className={styles.header}>
+              <h2 className={styles.title}>Control Panel</h2>
               <Button
                 variant="ghost"
                 size="icon"
-                className="hover:bg-gray-100/80"
+                className={styles.closeButton}
                 onClick={() => setIsOpen(false)}
               >
-                <X className="h-5 w-5" />
+                <X className={styles.closeIcon} />
               </Button>
             </div>
-            <div className="overflow-y-auto h-[calc(100vh-8rem)]">
+            <div className={styles.content}>
               {children}
             </div>
           </>
@@ -81,4 +88,4 @@ export default function ControlPanel({
       </div>
     </>
   )
-}
+} 

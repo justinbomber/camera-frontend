@@ -1,0 +1,40 @@
+.container {
+  @apply flex flex-col h-full overflow-hidden;
+}
+
+.content {
+  @apply flex-1 p-1 min-h-0;
+}
+
+.contentMobile {
+  @apply flex-1 p-1 overflow-y-auto;
+}
+
+.grid {
+  display: grid;
+  @apply w-full h-full gap-1 auto-rows-fr;
+}
+
+.grid1x1 {
+  @apply grid-cols-1 grid-rows-1;
+}
+
+.grid2x2 {
+  @apply grid-cols-2 grid-rows-2;
+}
+
+.grid3x3 {
+  @apply grid-cols-3 grid-rows-3;
+}
+
+.grid4x4 {
+  @apply grid-cols-4 grid-rows-4;
+}
+
+/* 手機端垂直布局 */
+.gridMobileVertical {
+  @apply grid-cols-1 gap-2;
+  grid-template-rows: repeat(auto-fit, minmax(200px, auto));
+  height: auto;
+  min-height: 100%;
+} 

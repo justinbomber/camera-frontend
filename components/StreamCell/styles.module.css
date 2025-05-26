@@ -1,0 +1,60 @@
+.container {
+  @apply aspect-video w-full h-full overflow-hidden relative;
+}
+
+.content {
+  @apply p-0 relative h-full;
+}
+
+.videoContainer {
+  @apply w-full h-full flex items-center justify-center bg-black relative overflow-hidden;
+}
+
+.video {
+  @apply w-full h-full object-contain bg-black transition-all duration-300;
+}
+
+.title {
+  @apply absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded z-10 backdrop-blur-sm;
+}
+
+.removeModeOverlay {
+  @apply absolute inset-0 bg-black/50 flex items-center justify-center z-20 transition-all duration-200;
+}
+
+.loadingOverlay {
+  @apply absolute inset-0 flex flex-col items-center justify-center z-30 bg-black/30 backdrop-blur-sm;
+}
+
+.errorOverlay {
+  @apply absolute inset-0 bg-black/70 flex items-center justify-center text-white text-sm z-30 backdrop-blur-sm;
+}
+
+.emptyState {
+  @apply flex flex-col items-center justify-center text-black h-full w-full bg-slate-100;
+}
+
+.emptyStateIcon {
+  @apply w-12 h-12 mb-2;
+}
+
+/* Safari 特定優化 */
+.container video {
+  -webkit-video-presentable-mode: none;
+  -webkit-playsinline: true;
+}
+
+/* 連線狀態指示器動畫 */
+.connectionIndicator {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+/* 錯誤狀態特殊樣式 */
+.errorState {
+  @apply animate-pulse;
+}
+
+/* 重連按鈕樣式 */
+.reconnectButton {
+  @apply transition-all duration-200 transform hover:scale-105 active:scale-95;
+} 

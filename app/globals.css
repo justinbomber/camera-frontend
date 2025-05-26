@@ -1,3 +1,93 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+:root {
+  /* Light theme colors */
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(215, 20%, 20%);
+  --primary: hsl(215, 100%, 50%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(215, 20%, 95%);
+  --secondary-foreground: hsl(215, 20%, 20%);
+  --border: hsl(215, 20%, 90%);
+  --error: hsl(0, 100%, 50%);
+  --error-foreground: hsl(0, 0%, 100%);
+}
+
+[data-theme='dark'] {
+  /* Dark theme colors */
+  --background: hsl(215, 20%, 10%);
+  --foreground: hsl(215, 20%, 90%);
+  --primary: hsl(215, 100%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(215, 20%, 20%);
+  --secondary-foreground: hsl(215, 20%, 90%);
+  --border: hsl(215, 20%, 30%);
+  --error: hsl(0, 100%, 60%);
+  --error-foreground: hsl(0, 0%, 100%);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Noto Sans TC', 'Inter', sans-serif;
+  line-height: 1.5;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+/* Grid spacing system */
+.grid-8 {
+  display: grid;
+  gap: 8px;
+}
+
+.grid-16 {
+  display: grid;
+  gap: 16px;
+}
+
+.grid-24 {
+  display: grid;
+  gap: 24px;
+}
+
+/* Responsive typography */
+@media (min-width: 640px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Loading skeleton styles */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--secondary) 25%,
+    var(--border) 50%,
+    var(--secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+} 

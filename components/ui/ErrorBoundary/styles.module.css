@@ -1,0 +1,46 @@
+.errorContainer {
+  padding: 2rem;
+  text-align: center;
+  background: hsla(0, 0%, 100%, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 0.5rem;
+  border: 1px solid hsl(0, 100%, 90%);
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.errorContainer h2 {
+  color: hsl(0, 100%, 50%);
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.errorContainer p {
+  color: hsl(215, 20%, 20%);
+  margin-bottom: 1.5rem;
+}
+
+.retryButton {
+  background: hsl(215, 100%, 50%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retryButton:hover {
+  background: hsl(215, 100%, 45%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .errorContainer {
+    background: hsla(215, 20%, 10%, 0.8);
+    border-color: hsl(0, 100%, 30%);
+  }
+
+  .errorContainer p {
+    color: hsl(215, 20%, 90%);
+  }
+} 

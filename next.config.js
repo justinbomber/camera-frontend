@@ -32,6 +32,18 @@ const nextConfig = {
             key: 'Cache-Control',
             value: 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
           },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
         ],
       },
     ]
@@ -55,12 +67,20 @@ const nextConfig = {
   },
   // 啟用獨立輸出模式，這是Docker部署所需要的
   output: 'standalone',
-  // 添加webpack配置
+  // 修改webpack配置
   webpack: (config, { isServer }) => {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
       layers: true,
+    }
+
+    // 修正 externals 配置格式
+    if (!isServer) {
+      config.externals = {
+        ...(config.externals || {}),
+        'h265web.js': 'H265webjs'
+      }
     }
 
     // 添加wasm文件加載器
