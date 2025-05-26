@@ -31,7 +31,7 @@
 }
 
 .emptyState {
-  @apply flex flex-col items-center justify-center text-black h-full w-full bg-slate-100;
+  @apply flex flex-col items-center justify-center text-gray-400 h-full w-full bg-gray-700;
 }
 
 .emptyStateIcon {

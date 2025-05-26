@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Menu, Square, Grid2X2, Grid3X3, LayoutGrid } from "lucide-react"
+import { createPortal } from "react-dom"
+import { Plus, Trash2, Menu, Square, Grid2X2, Grid3X3, LayoutGrid, User, LogOut, ChevronDown } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import StreamGrid from "@/components/StreamGrid"
 import ControlPanel from "@/components/ControlPanel"
@@ -11,6 +12,8 @@ import LoadingScreen from "@/components/ui/loading-screen"
 import { Button } from "@/components/ui/button"
 import { useDeviceDetection } from "@/lib/deviceUtils"
 import { Grid4x4Icon } from "@/components/ui/grid4x4-icon"
+import { AuthGuard } from "@/components/auth/AuthGuard"
+import { AuthService } from "@/lib/authService"
 
 // Default streams to load on initial page load
 const STREAM_ENDPOINT = process.env.NEXT_PUBLIC_STREAM_ENDPOINT || "http://streamcamkeelong.mooo.com"
@@ -48,9 +51,38 @@ export default function MonitoringDashboard() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   // 新增：手機端攝影機切換索引
   const [currentMobileStreamIndex, setCurrentMobileStreamIndex] = useState<number>(0)
+  // 新增：用戶下拉選單狀態
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   
   // 使用新的設備檢測 Hook
   const isMobile = useDeviceDetection()
+  
+  // 新增：獲取當前用戶信息
+  const currentUser = AuthService.getCurrentUser()
+  
+  // 新增：處理登出
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout()
+      router.push('/login')
+    } catch (error) {
+      console.error('登出失敗:', error)
+    }
+  }
+
+  // 新增：點擊外部關閉用戶選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isUserMenuOpen && !(event.target as Element).closest('.user-menu')) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isUserMenuOpen])
 
   // Load default streams on initial page load
   useEffect(() => {
@@ -370,14 +402,14 @@ export default function MonitoringDashboard() {
               className="w-full mb-4"
               variant="outline"
             >
-              <Trash2 className="mr-2 h-4 w-4 text-black" />
-              <span className="text-black">Remove Streams</span>
+              <Trash2 className="mr-2 h-4 w-4 text-white" />
+              <span className="text-white">Remove Streams</span>
             </Button>
           ) : (
             <>
               <div className="flex space-x-2 mb-2">
                 <Button onClick={cancelRemoveMode} className="flex-1" variant="outline">
-                  <span className="text-black">Cancel</span>
+                  <span className="text-white">Cancel</span>
                 </Button>
                 <Button
                   onClick={removeSelectedStreams}
@@ -388,16 +420,16 @@ export default function MonitoringDashboard() {
                   <span className="text-white">Delete {selectedForRemoval.length > 0 ? `(${selectedForRemoval.length})` : ''}</span>
                 </Button>
               </div>
-              <div className="mt-2 mb-4 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+              <div className="mt-2 mb-4 p-2 bg-yellow-900/30 border border-yellow-600/50 rounded-md text-sm text-yellow-200">
                 選擇要移除的串流，然後點擊「Delete」按鈕進行移除
               </div>
             </>
           )}
 
           {/* 攝影機顯示控制列表 */}
-          <div className="border-t pt-4">
+          <div className="border-t border-gray-600 pt-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-black">攝影機顯示控制</h3>
+              <h3 className="text-sm font-medium text-white">攝影機顯示控制</h3>
               {allStreams.length > 0 && (
                 <div className="flex items-center space-x-2">
                   <input
@@ -405,9 +437,9 @@ export default function MonitoringDashboard() {
                     id="desktop-select-all"
                     checked={allStreams.every(({ index }) => cameraVisibility[index] !== false)}
                     onChange={toggleAllCameras}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
                   />
-                  <label htmlFor="desktop-select-all" className="text-xs text-black font-medium cursor-pointer">
+                  <label htmlFor="desktop-select-all" className="text-xs text-white font-medium cursor-pointer">
                     全選
                   </label>
                 </div>
@@ -417,25 +449,25 @@ export default function MonitoringDashboard() {
               {allStreams.length > 0 ? allStreams.map(({ stream, index, name }) => (
                 <div 
                   key={index}
-                  className="flex items-center space-x-3 p-2 border rounded-md bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors"
+                  className="flex items-center space-x-3 p-2 border rounded-md bg-gray-700/50 border-gray-600 hover:bg-gray-600/50 transition-colors"
                 >
                   <input
                     type="checkbox"
                     id={`camera-${index}`}
                     checked={cameraVisibility[index] !== false}
                     onChange={() => toggleCameraVisibility(index)}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
                   />
                   <label 
                     htmlFor={`camera-${index}`}
-                    className="flex-1 text-sm text-black font-medium cursor-pointer"
+                    className="flex-1 text-sm text-white font-medium cursor-pointer"
                   >
                     {name}
                   </label>
                   <div className={`w-2 h-2 rounded-full ${cameraVisibility[index] !== false ? 'bg-green-500' : 'bg-gray-400'}`} />
                 </div>
               )) : (
-                <div className="text-center text-gray-500 py-4">
+                <div className="text-center text-gray-400 py-4">
                   尚無攝影機
                 </div>
               )}
@@ -446,12 +478,12 @@ export default function MonitoringDashboard() {
     )
   }
   
-  return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 overflow-hidden">
+  const content = (
+    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black overflow-hidden">
       {/* 頁面標題區域 */}
-      <div className="bg-white/80 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-white/20">
-        <h1 className="text-xl font-bold text-gray-800">
-          Streaminghub {isMobile && <span className="text-sm text-gray-500 ml-2">(手機版)</span>}
+              <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-[100000]">
+        <h1 className="text-xl font-bold text-white">
+          monitor.hub {isMobile && <span className="text-sm text-gray-300 ml-2">(手機版)</span>}
         </h1>
         <div className="flex items-center gap-2">
           {/* 宮格切換按鈕 - 只在桌面設備顯示 */}
@@ -461,7 +493,7 @@ export default function MonitoringDashboard() {
                 variant={gridLayout === 1 ? "default" : "outline"}
                 size="icon"
                 onClick={() => setGridLayout(1)}
-                className={`w-8 h-8 ${gridLayout === 1 ? 'text-gray-500' : 'text-black'}`}
+                className={`w-8 h-8 ${gridLayout === 1 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
               >
                 <Square className="h-4 w-4" />
               </Button>
@@ -469,7 +501,7 @@ export default function MonitoringDashboard() {
                 variant={gridLayout === 4 ? "default" : "outline"}
                 size="icon"
                 onClick={() => setGridLayout(4)}
-                className={`w-8 h-8 ${gridLayout === 4 ? 'text-gray-500' : 'text-black'}`}
+                className={`w-8 h-8 ${gridLayout === 4 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
               >
                 <Grid2X2 className="h-4 w-4" />
               </Button>
@@ -477,7 +509,7 @@ export default function MonitoringDashboard() {
                 variant={gridLayout === 9 ? "default" : "outline"}
                 size="icon"
                 onClick={() => setGridLayout(9)}
-                className={`w-8 h-8 ${gridLayout === 9 ? 'text-gray-500' : 'text-black'}`}
+                className={`w-8 h-8 ${gridLayout === 9 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
@@ -485,18 +517,57 @@ export default function MonitoringDashboard() {
                 variant={gridLayout === 16 ? "default" : "outline"}
                 size="icon"
                 onClick={() => setGridLayout(16)}
-                className={`w-8 h-8 ${gridLayout === 16 ? 'text-gray-500' : 'text-black'}`}
+                className={`w-8 h-8 ${gridLayout === 16 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
               >
                 <Grid4x4Icon className="h-4 w-4" />
               </Button>
             </>
           )}
           
+          {/* 用戶頭像和下拉選單 */}
+          <div className="relative user-menu">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2 hover:bg-gray-700/80 text-white px-3 py-2"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            >
+              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-lg">
+                <User className="h-4 w-4 text-gray-900" />
+              </div>
+              <span className="hidden sm:block text-sm font-medium">
+                {currentUser?.email?.split('@')[0] || '用戶'}
+              </span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+            </Button>
+            
+            {/* 下拉選單 - 提高z-index */}
+            {isUserMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-600 py-2 z-[999999] shadow-2xl">
+                <div className="px-4 py-2 border-b border-gray-600">
+                  <p className="text-sm font-medium text-white">
+                    {currentUser?.email || 'user@example.com'}
+                  </p>
+                  <p className="text-xs text-gray-300">
+                    已登入
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  登出
+                </button>
+              </div>
+            )}
+          </div>
+          
           {/* 菜單按鈕 */}
           <Button
             variant="ghost"
             size="icon"
-            className="hover:bg-gray-100/80 text-black"
+            className="hover:bg-gray-700/80 text-white"
             onClick={() => setIsPanelOpen(!isPanelOpen)}
           >
             <Menu className="h-5 w-5" />
@@ -513,5 +584,11 @@ export default function MonitoringDashboard() {
         onAdd={addStream} 
       />
     </div>
+  );
+
+  return (
+    <AuthGuard>
+      {content}
+    </AuthGuard>
   )
 } 

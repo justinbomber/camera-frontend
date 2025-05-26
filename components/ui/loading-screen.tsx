@@ -125,7 +125,7 @@ export default function LoadingScreen({
           <h2 className={`font-bold text-gray-800 mb-2 ${
             isMobile ? 'text-xl' : 'text-2xl'
           }`}>
-            Streaminghub
+            monitor.hub
           </h2>
           <p className={`text-gray-600 ${
             isMobile ? 'text-sm' : 'text-base'

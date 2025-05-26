@@ -1,5 +1,5 @@
 .panel {
-  @apply h-screen bg-white p-6 shadow-lg transition-all duration-300 ease-in-out;
+  @apply h-screen bg-gray-800/95 p-6 shadow-lg transition-all duration-300 ease-in-out backdrop-blur-sm;
 }
 
 .mobilePanel {
@@ -7,7 +7,7 @@
 }
 
 .desktopPanel {
-  @apply border-l border-gray-200 fixed right-0 z-50;
+  @apply border-l border-gray-600 fixed right-0 z-50;
   top: 4rem; /* 配合頁面標題高度 */
   height: calc(100vh - 4rem);
 }
@@ -35,15 +35,15 @@
 }
 
 .title {
-  @apply text-lg font-semibold text-black;
+  @apply text-lg font-semibold text-white;
 }
 
 .closeButton {
-  @apply hover:bg-gray-100/80 text-black;
+  @apply hover:bg-gray-700/80 text-white;
 }
 
 .closeIcon {
-  @apply h-5 w-5 text-black;
+  @apply h-5 w-5 text-white;
 }
 
 .content {

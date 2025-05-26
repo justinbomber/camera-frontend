@@ -48,23 +48,8 @@ const nextConfig = {
       },
     ]
   },
-  // 修改重定向配置
-  async redirects() {
-    return [
-      // 將根目錄重定向到 /mainpage
-      {
-        source: '/',
-        destination: '/mainpage',
-        permanent: true,
-      },
-      // 將所有不是 mainpage 的路徑重定向到 404 頁面
-      {
-        source: '/:path((?!mainpage).*)',
-        destination: '/not-found',
-        permanent: false,
-      },
-    ]
-  },
+  // 移除錯誤的重定向配置，讓Next.js正常處理路由
+  // 不需要手動重定向，讓 app/page.tsx 處理根路由邏輯
   // 啟用獨立輸出模式，這是Docker部署所需要的
   output: 'standalone',
   // 修改webpack配置

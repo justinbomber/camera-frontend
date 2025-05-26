@@ -173,7 +173,7 @@ export default function StreamCell({
   }
 
   return (
-    <Card className={styles.container} onClick={onClick}>
+    <Card className={`${styles.container} border-0 bg-gray-800`} onClick={onClick}>
       <CardContent className={styles.content}>
         {streamUrl ? (
           <>
