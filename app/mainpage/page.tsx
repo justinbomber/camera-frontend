@@ -9,6 +9,7 @@ import ControlPanel from "@/components/ControlPanel"
 import AddStreamDialog from "@/components/AddStreamDialog"
 import MobileStreamPlayer from "@/components/MobileStreamPlayer"
 import LoadingScreen from "@/components/ui/loading-screen"
+import Sidebar, { SidebarMode } from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
 import { useDeviceDetection } from "@/lib/deviceUtils"
 import { Grid4x4Icon } from "@/components/ui/grid4x4-icon"
@@ -47,12 +48,37 @@ export default function MonitoringDashboard() {
   const [gridLayout, setGridLayout] = useState<1 | 4 | 9 | 16>(9)
   // 新增：攝影機顯示狀態管理
   const [cameraVisibility, setCameraVisibility] = useState<{ [key: number]: boolean }>({})
-  // 新增：初始載入狀態
-  const [isInitialLoading, setIsInitialLoading] = useState(true)
+  // 新增：初始載入狀態，檢查是否已經載入過
+  const [isInitialLoading, setIsInitialLoading] = useState(() => {
+    // 檢查 sessionStorage 中是否已經標記為已載入
+    if (typeof window !== 'undefined') {
+      const hasLoaded = sessionStorage.getItem('camera-loaded')
+      return !hasLoaded // 如果沒有標記，則需要載入
+    }
+    return true // SSR 時預設需要載入
+  })
   // 新增：手機端攝影機切換索引
   const [currentMobileStreamIndex, setCurrentMobileStreamIndex] = useState<number>(0)
   // 新增：用戶下拉選單狀態
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  // 新增：sidebar 狀態管理，從 localStorage 讀取偏好設定
+  const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-mode')
+      if (saved && ['expanded', 'collapsed', 'hover'].includes(saved)) {
+        return saved as SidebarMode
+      }
+    }
+    return 'expanded'
+  })
+  
+  // 保存 sidebar 模式到 localStorage
+  const handleSidebarModeChange = (mode: SidebarMode) => {
+    setSidebarMode(mode)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebar-mode', mode)
+    }
+  }
   
   // 使用新的設備檢測 Hook
   const isMobile = useDeviceDetection()
@@ -87,6 +113,21 @@ export default function MonitoringDashboard() {
   // Load default streams on initial page load
   useEffect(() => {
     const loadInitialStreams = async () => {
+      // 如果已經載入過，直接設置串流而不顯示載入動畫
+      if (!isInitialLoading) {
+        const initialStreams = [...streams]
+        const initialVisibility: { [key: number]: boolean } = {}
+        DEFAULT_STREAMS.forEach((stream, index) => {
+          if (index < initialStreams.length) {
+            initialStreams[index] = stream
+            initialVisibility[index] = true
+          }
+        })
+        setStreams(initialStreams)
+        setCameraVisibility(initialVisibility)
+        return
+      }
+      
       // 模擬載入時間，讓使用者看到統一的loading畫面
       await new Promise(resolve => setTimeout(resolve, 1500))
       
@@ -101,6 +142,11 @@ export default function MonitoringDashboard() {
       setStreams(initialStreams)
       setCameraVisibility(initialVisibility)
       setIsInitialLoading(false)
+      
+      // 標記為已載入，下次訪問時不再顯示載入動畫
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('camera-loaded', 'true')
+      }
     }
     
     loadInitialStreams()
@@ -245,7 +291,7 @@ export default function MonitoringDashboard() {
     }
     
     return (
-      <div className="flex flex-col flex-1 w-full overflow-hidden">
+      <>
         {/* 手機端使用單一播放器 + 切換列表 */}
         <div className="flex-1 overflow-hidden">
           <MobileStreamPlayer
@@ -265,11 +311,10 @@ export default function MonitoringDashboard() {
             {!isRemoveMode ? (
               <Button
                 onClick={() => setIsRemoveMode(true)}
-                className="w-full"
-                variant="outline"
+                className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600"
               >
-                <Trash2 className="mr-2 h-4 w-4 text-black" />
-                <span className="text-black">移除串流</span>
+                <Trash2 className="mr-2 h-4 w-4 text-white" />
+                <span className="text-white">移除串流</span>
               </Button>
             ) : (
               <>
@@ -362,7 +407,7 @@ export default function MonitoringDashboard() {
             </div>
           </div>
         </ControlPanel>
-      </div>
+      </>
     )
   }
 
@@ -373,8 +418,9 @@ export default function MonitoringDashboard() {
     return (
       <div className="flex flex-1 w-full overflow-hidden">
         {/* 串流網格 - 佔據全螢幕 */}
-        <div className="flex-grow h-[calc(100vh-4rem)] transition-all duration-300 ease-in-out overflow-hidden">
+        <div className="flex-grow h-full transition-all duration-300 ease-in-out overflow-hidden">
           <StreamGrid
+            key={`desktop-grid-${sidebarMode}`}
             streams={isRemoveMode ? streams.filter(s => s !== null) as string[] : getValidStreams()}
             originalStreams={streams}
             isRemoveMode={isRemoveMode}
@@ -399,8 +445,7 @@ export default function MonitoringDashboard() {
           {!isRemoveMode ? (
             <Button
               onClick={() => setIsRemoveMode(true)}
-              className="w-full mb-4"
-              variant="outline"
+              className="w-full mb-4 bg-red-600 hover:bg-red-700 text-white border-red-600"
             >
               <Trash2 className="mr-2 h-4 w-4 text-white" />
               <span className="text-white">Remove Streams</span>
@@ -479,110 +524,120 @@ export default function MonitoringDashboard() {
   }
   
   const content = (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black overflow-hidden">
-      {/* 頁面標題區域 */}
-              <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-[100000]">
-        <h1 className="text-xl font-bold text-white">
-          monitor.hub {isMobile && <span className="text-sm text-gray-300 ml-2">(手機版)</span>}
-        </h1>
-        <div className="flex items-center gap-2">
-          {/* 宮格切換按鈕 - 只在桌面設備顯示 */}
-          {!isMobile && (
-            <>
+    <div className="flex h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black overflow-hidden">
+      {/* Sidebar - 只在桌面版顯示 */}
+      {!isMobile && (
+        <Sidebar mode={sidebarMode} onModeChange={handleSidebarModeChange} />
+      )}
+      
+      {/* 主內容區域 */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* 頁面標題區域 */}
+        <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-[100000]">
+          <h1 className="text-xl font-bold text-white">
+            monitor.hub {isMobile && <span className="text-sm text-gray-300 ml-2">(手機版)</span>}
+          </h1>
+          <div className="flex items-center gap-2">
+            {/* 宮格切換按鈕 - 只在桌面設備顯示 */}
+            {!isMobile && (
+              <>
+                <Button
+                  variant={gridLayout === 1 ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setGridLayout(1)}
+                  className={`w-8 h-8 ${gridLayout === 1 ? 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black border-yellow-500' : 'bg-black text-white border-gray-600 hover:bg-gray-800'}`}
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={gridLayout === 4 ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setGridLayout(4)}
+                  className={`w-8 h-8 ${gridLayout === 4 ? 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black border-yellow-500' : 'bg-black text-white border-gray-600 hover:bg-gray-800'}`}
+                >
+                  <Grid2X2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={gridLayout === 9 ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setGridLayout(9)}
+                  className={`w-8 h-8 ${gridLayout === 9 ? 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black border-yellow-500' : 'bg-black text-white border-gray-600 hover:bg-gray-800'}`}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={gridLayout === 16 ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setGridLayout(16)}
+                  className={`w-8 h-8 ${gridLayout === 16 ? 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-black border-yellow-500' : 'bg-black text-white border-gray-600 hover:bg-gray-800'}`}
+                >
+                  <Grid4x4Icon className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            
+            {/* 用戶頭像和下拉選單 */}
+            <div className="relative user-menu">
               <Button
-                variant={gridLayout === 1 ? "default" : "outline"}
-                size="icon"
-                onClick={() => setGridLayout(1)}
-                className={`w-8 h-8 ${gridLayout === 1 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 hover:bg-gray-700/80 text-white px-3 py-2"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               >
-                <Square className="h-4 w-4" />
+                <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-lg">
+                  <User className="h-4 w-4 text-gray-900" />
+                </div>
+                <span className="hidden sm:block text-sm font-medium">
+                  {currentUser?.email?.split('@')[0] || '用戶'}
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
               </Button>
-              <Button
-                variant={gridLayout === 4 ? "default" : "outline"}
-                size="icon"
-                onClick={() => setGridLayout(4)}
-                className={`w-8 h-8 ${gridLayout === 4 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
-              >
-                <Grid2X2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={gridLayout === 9 ? "default" : "outline"}
-                size="icon"
-                onClick={() => setGridLayout(9)}
-                className={`w-8 h-8 ${gridLayout === 9 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={gridLayout === 16 ? "default" : "outline"}
-                size="icon"
-                onClick={() => setGridLayout(16)}
-                className={`w-8 h-8 ${gridLayout === 16 ? 'text-white bg-gray-700' : 'text-white border-gray-600 hover:bg-gray-700'}`}
-              >
-                <Grid4x4Icon className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-          
-          {/* 用戶頭像和下拉選單 */}
-          <div className="relative user-menu">
+              
+              {/* 下拉選單 - 提高z-index */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-600 py-2 z-[999999] shadow-2xl">
+                  <div className="px-4 py-2 border-b border-gray-600">
+                    <p className="text-sm font-medium text-white">
+                      {currentUser?.email || 'user@example.com'}
+                    </p>
+                    <p className="text-xs text-gray-300">
+                      已登入
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    登出
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* 菜單按鈕 */}
             <Button
               variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 hover:bg-gray-700/80 text-white px-3 py-2"
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              size="icon"
+              className="hover:bg-gray-700/80 text-white"
+              onClick={() => setIsPanelOpen(!isPanelOpen)}
             >
-              <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-lg">
-                <User className="h-4 w-4 text-gray-900" />
-              </div>
-              <span className="hidden sm:block text-sm font-medium">
-                {currentUser?.email?.split('@')[0] || '用戶'}
-              </span>
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+              <Menu className="h-5 w-5" />
             </Button>
-            
-            {/* 下拉選單 - 提高z-index */}
-            {isUserMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-600 py-2 z-[999999] shadow-2xl">
-                <div className="px-4 py-2 border-b border-gray-600">
-                  <p className="text-sm font-medium text-white">
-                    {currentUser?.email || 'user@example.com'}
-                  </p>
-                  <p className="text-xs text-gray-300">
-                    已登入
-                  </p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  登出
-                </button>
-              </div>
-            )}
           </div>
-          
-          {/* 菜單按鈕 */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hover:bg-gray-700/80 text-white"
-            onClick={() => setIsPanelOpen(!isPanelOpen)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
         </div>
+
+        {/* 主内容區域 - 根據設備類型渲染不同內容 */}
+        <div className="flex-1 overflow-hidden">
+          {isMobile ? renderMobileContent() : renderDesktopContent()}
+        </div>
+
+        <AddStreamDialog 
+          isOpen={isAddDialogOpen} 
+          onClose={() => setIsAddDialogOpen(false)} 
+          onAdd={addStream} 
+        />
       </div>
-
-      {/* 主内容區域 - 根據設備類型渲染不同內容 */}
-      {isMobile ? renderMobileContent() : renderDesktopContent()}
-
-      <AddStreamDialog 
-        isOpen={isAddDialogOpen} 
-        onClose={() => setIsAddDialogOpen(false)} 
-        onAdd={addStream} 
-      />
     </div>
   );
 
