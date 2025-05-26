@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "NEXT_PUBLIC_STREAM_ENDPOINT=http://streamcamkeelong.mooo.com next dev",
+    "dev:local": "NEXT_PUBLIC_STREAM_ENDPOINT=http://localhost:8888 next dev",
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint"
@@ -15,6 +16,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "framer-motion": "^12.12.2",
     "h265web.js": "^2.2.2",
     "hls.js": "^1.5.1",
     "lucide-react": "^0.292.0",

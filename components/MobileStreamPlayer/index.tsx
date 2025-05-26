@@ -23,6 +23,7 @@ export default function MobileStreamPlayer({
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected')
   const [isStreamListOpen, setIsStreamListOpen] = useState<boolean>(false)
+  const [isReconnecting, setIsReconnecting] = useState<boolean>(false)
   const loadingCanvasRef = useRef<HTMLCanvasElement>(null)
 
   const currentStreamUrl = streams[currentStreamIndex]
@@ -62,18 +63,32 @@ export default function MobileStreamPlayer({
               console.error('手機端串流錯誤:', message)
               setConnectionStatus('error')
               setIsLoading(false)
+              setErrorMessage(message)
+              setIsReconnecting(false)
             },
             onLoading: (loading) => {
               setIsLoading(loading)
               if (!loading) {
                 setConnectionStatus('connected')
+                setIsReconnecting(false)
               }
             },
             onReady: () => {
               setIsLoading(false)
               setConnectionStatus('connected')
               setErrorMessage("")
+              setIsReconnecting(false)
               console.log('手機端串流就緒')
+            },
+            onConnectionLost: () => {
+              console.log('手機端偵測到連線中斷')
+              setConnectionStatus('error')
+            },
+            onReconnecting: () => {
+              console.log('手機端開始重連')
+              setIsReconnecting(true)
+              setIsLoading(true)
+              setConnectionStatus('disconnected')
             }
           })
           
@@ -82,10 +97,19 @@ export default function MobileStreamPlayer({
           console.error('手機端切換串流失敗:', error)
           setConnectionStatus('error')
           setIsLoading(false)
+          setErrorMessage('切換串流失敗')
         }
       }
     }, 500) // 減少延遲時間到500ms
   }
+
+  // 監聽外部的initialStreamIndex變化
+  useEffect(() => {
+    if (initialStreamIndex !== currentStreamIndex && initialStreamIndex < streams.length) {
+      console.log(`外部要求切換到攝影機 ${initialStreamIndex}`)
+      switchStream(initialStreamIndex)
+    }
+  }, [initialStreamIndex, streams.length])
 
   // 初始化串流
   useEffect(() => {
@@ -112,18 +136,32 @@ export default function MobileStreamPlayer({
         console.error('手機端串流錯誤:', message)
         setConnectionStatus('error')
         setIsLoading(false)
+        setErrorMessage(message)
+        setIsReconnecting(false)
       },
       onLoading: (loading) => {
         setIsLoading(loading)
         if (!loading) {
           setConnectionStatus('connected')
+          setIsReconnecting(false)
         }
       },
       onReady: () => {
         setIsLoading(false)
         setConnectionStatus('connected')
         setErrorMessage("")
+        setIsReconnecting(false)
         console.log('手機端串流就緒')
+      },
+      onConnectionLost: () => {
+        console.log('手機端偵測到連線中斷')
+        setConnectionStatus('error')
+      },
+      onReconnecting: () => {
+        console.log('手機端開始重連')
+        setIsReconnecting(true)
+        setIsLoading(true)
+        setConnectionStatus('disconnected')
       }
     })
 
@@ -171,8 +209,13 @@ export default function MobileStreamPlayer({
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       const t = Date.now() / 1000
       
-      // 不同狀態使用不同顏色
-      const color = connectionStatus === 'error' ? '#f59e0b' : '#3b82f6'
+      // 根據狀態使用不同顏色
+      let color = '#3b82f6' // 預設藍色
+      if (isReconnecting) {
+        color = '#f59e0b' // 重連時使用橙色
+      } else if (connectionStatus === 'error') {
+        color = '#ef4444' // 錯誤時使用紅色
+      }
       
       ctx.beginPath()
       ctx.arc(canvas.width/2, canvas.height/2, 28, 0, Math.PI*2*(0.5 + 0.5*Math.sin(t*2)))
@@ -188,10 +231,18 @@ export default function MobileStreamPlayer({
     loop()
     
     return () => { running = false }
-  }, [isLoading, connectionStatus])
+  }, [isLoading, connectionStatus, isReconnecting])
 
   // 連線狀態指示器
   const getConnectionIcon = () => {
+    if (isReconnecting) {
+      return (
+        <div className="animate-spin">
+          <Wifi className="w-4 h-4 text-orange-400" />
+        </div>
+      )
+    }
+    
     switch (connectionStatus) {
       case 'connected':
         return <Wifi className="w-4 h-4 text-green-400" />
@@ -285,7 +336,8 @@ export default function MobileStreamPlayer({
           <div className={styles.statusIndicator}>
             {getConnectionIcon()}
             <span className={styles.statusText}>
-              {connectionStatus === 'connected' ? '已連線' : 
+              {isReconnecting ? '重連中' :
+               connectionStatus === 'connected' ? '已連線' : 
                connectionStatus === 'error' ? '錯誤' : '離線'}
             </span>
           </div>
@@ -307,7 +359,7 @@ export default function MobileStreamPlayer({
                 className={styles.loadingCanvas}
               />
               <div className={styles.loadingText}>
-                載入中...
+                {isReconnecting ? '重新連線中...' : '載入中...'}
               </div>
             </div>
           )}
@@ -336,17 +388,15 @@ export default function MobileStreamPlayer({
                 <Button
                   key={index}
                   variant={index === currentStreamIndex ? "default" : "ghost"}
-                  onClick={() => switchStream(index)}
-                  className={styles.streamButton}
-                  disabled={isLoading}
+                  onClick={() => {
+                    console.log(`點擊攝影機 ${index + 1}`)
+                    switchStream(index)
+                  }}
+                  className={`${styles.streamButton} ${
+                    index === currentStreamIndex ? styles.streamButtonActive : ''
+                  }`}
                 >
-                  <Video className={styles.streamButtonIcon} />
-                  <span className={styles.streamButtonText}>
-                    {getCameraName(index)}
-                  </span>
-                  {index === currentStreamIndex && (
-                    <div className={styles.activeIndicator} />
-                  )}
+                  {getCameraName(index)}
                 </Button>
               ))}
             </div>
@@ -355,4 +405,4 @@ export default function MobileStreamPlayer({
       )}
     </div>
   )
-} 
+}

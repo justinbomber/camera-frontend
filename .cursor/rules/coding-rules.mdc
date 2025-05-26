@@ -3,13 +3,116 @@ description:
 globs: 
 alwaysApply: true
 ---
+
 ## mcp tools 調用
-1. 在做所有事情之前一定要先使用sequential thinking 思考過
+使用brave serch進行網頁搜尋
 
 
 ## Coding 規範與最佳實踐
 
 以下章節以與「UI 設計主要原則」相同的風格呈現，並進一步延伸，使開發流程與使用者體驗（UX）達到最佳化。在本專案中，我們採用 Next.js（基於 React）作為核心框架，且「使用者體驗」為最高優先。
+
+## 主要原則（！必須follow！）
+- 要做ui都必須使用canvas的動畫套件作爲主要的設計工具，ui的互動一定要有動畫，如buttun滑鼠移動到會變顔色，control panel會滑動出來等細節
+- 不要自己編譯code或進行測試，需要我會再跟你說，默認不要build及run dev
+
+# Streaminghub 專案開發規則與進度
+
+## 當前進度 (2025-01-27)
+
+### 已完成功能
+1. ✅ **統一Loading畫面**: 
+   - 創建了統一的LoadingScreen元件，支援桌面端和手機端
+   - 替代了九宮格的預載入過程
+   - 使用framer-motion提供流暢的動畫效果
+
+2. ✅ **手機端Control Panel優化**:
+   - 移除了手機端的攝影機顯示控制checklist
+   - 因為手機端只顯示單一畫面，不需要多攝影機顯示控制
+   - 保留了串流列表管理功能
+
+3. ✅ **手機端攝影機列表點擊功能**:
+   - 確認並優化了MobileStreamPlayer的攝影機切換功能
+   - 加強了按鈕的觸控回饋和視覺效果
+   - 添加了點擊日誌和錯誤處理
+
+4. ✅ **手機端UI優化 (2025-01-27)**:
+   - **攝影機名稱和連線狀態位置調整**: 將左上角的攝影機名稱和右上角的連線狀態向上移動，減少對串流畫面的遮擋
+   - **Control Panel串流列表互動優化**: 
+     - 每個攝影機項目現在都可以點擊切換
+     - 正在播放的攝影機顯示綠色背景和右側綠色勾勾
+     - 添加hover效果和過渡動畫
+     - 優化觸控回饋體驗
+   - **響應式設計改進**: 確保在橫屏和直屏模式下都能正確顯示UI元素
+
+5. ✅ **手機端智能重連機制 (2025-01-27)**:
+   - **連線異常偵測**: 自動偵測播放停滯、意外暫停等異常狀況
+   - **智能重連控制**: 
+     - 每5秒最多只能進行一次重連，避免頻繁重連
+     - 最多重試3次，超過限制後停止重連
+     - 重連時自動顯示Loading圈圈和"重新連線中"提示
+   - **視覺狀態回饋**: 
+     - 重連時Loading圈圈顯示橙色
+     - 連線狀態指示器顯示旋轉的重連圖示
+     - 錯誤狀態使用紅色視覺提示
+   - **播放狀態監控**: 每2秒檢查播放進度，10秒無進度視為連線異常
+
+6. ✅ **環境變數端點配置 (2025-01-27)**:
+   - **動態端點切換**: 支援通過npm命令切換不同的串流伺服器端點
+   - **開發命令優化**: 
+     - `npm run dev` - 使用遠端伺服器 (http://streamcamkeelong.mooo.com)
+     - `npm run dev:local` - 使用本地伺服器 (http://localhost:8888)
+   - **環境變數支援**: 使用 NEXT_PUBLIC_STREAM_ENDPOINT 環境變數控制端點
+   - **向後相容**: 預設使用遠端端點，確保現有功能不受影響
+   - **調試功能**: 添加console.log顯示當前使用的端點
+
+7. ✅ **CORS 問題修復 (2025-01-27)**:
+   - **問題識別**: 解決 XMLHttpRequest 中 'expires' 標頭被 CORS 政策阻擋的問題
+   - **錯誤詳情**: "Request header field expires is not allowed by Access-Control-Allow-Headers in preflight response"
+   - **修復範圍**: 
+     - 移除 `lib/streamService.ts` 中 HLS.js xhrSetup 配置的 Expires 標頭
+     - 移除 `lib/mobileStreamService.ts` 中手機端 HLS.js 配置的 Expires 標頭  
+     - 移除 `detectStreamCodec` 函數中 fetch 請求的 Expires 標頭
+     - 更新 `next.config.js` CORS 配置，增加 Cache-Control 和 Pragma 到允許的標頭清單
+   - **保留功能**: 維持 Cache-Control 標頭以確保串流不被快取，移除有問題的 Expires 標頭
+   - **向後相容**: 修復不影響現有串流播放功能，只是移除了造成 CORS 錯誤的標頭
+   - **技術細節**: Expires header 在跨域請求中需要明確的 CORS 許可，移除後改依賴 Cache-Control 實現相同效果
+
+### 技術架構
+
+#### 串流方式（不可更改）
+- **H.265**: 使用 h265web.js
+- **HLS (H.264)**: 先嘗試原生 `<video>` 播放，fallback 用 hls.js
+
+#### 主要元件結構
+```
+app/
+├── page.tsx (根路由，重定向到mainpage)
+├── mainpage/page.tsx (主頁面，支援桌面和手機端)
+├── stream/[id]/page.tsx (單一串流詳細頁面)
+└── layout.tsx
+
+components/
+├── ui/loading-screen.tsx (統一Loading畫面)
+├── MobileStreamPlayer/ (手機端播放器)
+├── StreamGrid/ (桌面端網格)
+├── ControlPanel/ (控制面板)
+└── AddStreamDialog/ (新增串流對話框)
+```
+
+#### 設備檢測與響應式設計
+- 使用 `useDeviceDetection` Hook 檢測設備類型
+- 桌面端：顯示網格布局 (1x1, 2x2, 3x3, 4x4)
+- 手機端：單一播放器 + 攝影機切換列表
+
+### 下一步開發計劃
+1. 🔄 **串流連線優化**: 改進重連機制和錯誤處理
+2. 🔄 **效能優化**: 實作懶加載和記憶體管理
+3. 🔄 **使用者體驗**: 添加更多互動回饋和狀態指示
+4. 🔄 **測試覆蓋**: 增加單元測試和整合測試
+
+---
+
 
 ---
 
@@ -95,16 +198,6 @@ alwaysApply: true
 
 * **全域狀態**：僅限使用 React Context + useReducer，或 Recoil/MobX（視團隊需求）。
 * **串流狀態**：集中於 `lib/streamService.ts`，並提供 `connect()`、`disconnect()`、`reconnect()` 等 API。
-
----
-
-### 7. 串流連線與重連策略
-
-* **自動重連**：
-
-  1. 連線失敗後每 3 秒嘗試重連，至多重試 5 次。
-  2. 連續失敗超過兩次，顯示全域 Toast 警告並提供「重新連線」按鈕。
-* **Heartbeat 檢測**：每 10 秒發送一次心跳訊號，確保後端準時回應。
 
 ---
 

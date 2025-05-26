@@ -60,6 +60,35 @@ npm run build
 npm start
 ```
 
+## 🚀 開發指令
+
+### 基本開發命令
+```bash
+# 使用遠端串流伺服器 (http://streamcamkeelong.mooo.com)
+npm run dev
+
+# 使用本地串流伺服器 (http://localhost:8888)
+npm run dev:local
+```
+
+### 串流端點配置
+- **遠端模式**: `npm run dev` - 連接到 http://streamcamkeelong.mooo.com
+- **本地模式**: `npm run dev:local` - 連接到 http://localhost:8888
+
+> 💡 **提示**: 使用本地模式時，請確保您的本地串流伺服器正在 8888 端口運行
+
+### 其他命令
+```bash
+# 建置專案
+npm run build
+
+# 啟動生產環境
+npm run start
+
+# 程式碼檢查
+npm run lint
+```
+
 ## 🔧 設定說明
 
 ### 串流 URL 格式

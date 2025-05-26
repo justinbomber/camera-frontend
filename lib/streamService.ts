@@ -59,8 +59,6 @@ class StreamService {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
         }
       });
       const txt = await resp.text();
@@ -241,8 +239,6 @@ class StreamService {
       nudgeMaxRetry: 3,
       xhrSetup: (xhr) => {
         xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        xhr.setRequestHeader('Pragma', 'no-cache');
-        xhr.setRequestHeader('Expires', '0');
       }
     });
     

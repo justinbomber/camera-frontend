@@ -32,8 +32,12 @@
 
 /* 狀態指示器 */
 .statusIndicator {
-  @apply absolute top-4 right-4 z-10 flex items-center gap-2;
+  @apply absolute z-10 flex items-center gap-2;
   @apply bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2;
+  /* 向上移動到更高位置，減少對串流畫面的遮擋 */
+  top: -12px;
+  right: 8px;
+  transform: translateY(-50%);
 }
 
 .statusText {
@@ -42,8 +46,12 @@
 
 /* 攝影機資訊 */
 .cameraInfo {
-  @apply absolute top-4 left-4 z-10;
+  @apply absolute z-10;
   @apply bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2;
+  /* 向上移動到更高位置，減少對串流畫面的遮擋 */
+  top: -12px;
+  left: 8px;
+  transform: translateY(-50%);
 }
 
 .cameraName {
@@ -138,14 +146,24 @@
 .streamButton {
   @apply relative w-full flex items-center justify-start p-4;
   @apply text-left transition-all duration-200;
-  @apply hover:bg-gray-100/80;
+  @apply hover:bg-gray-100/80 active:bg-gray-200/80;
+  @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50;
   border-radius: 12px;
   border: 1px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.streamButton:disabled {
+  @apply opacity-50 cursor-not-allowed;
+  pointer-events: none;
 }
 
 .streamButtonActive {
   @apply bg-blue-50/80 border-blue-200/50 text-blue-700;
-  @apply hover:bg-blue-100/80;
+  @apply hover:bg-blue-100/80 active:bg-blue-200/80;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
 }
 
@@ -290,15 +308,16 @@
   
   .cameraInfo,
   .statusIndicator {
-    @apply top-2;
+    /* 橫屏時保持在上方位置 */
+    top: -8px;
   }
   
   .cameraInfo {
-    @apply left-2;
+    left: 8px;
   }
   
   .statusIndicator {
-    @apply right-2;
+    right: 8px;
   }
   
   /* 橫屏時進一步限制列表高度 */

@@ -4,8 +4,10 @@ import Hls from 'hls.js/dist/hls.js';
 
 export interface MobileStreamServiceConfig {
   onError?: (message: string) => void;
-  onLoading?: (isLoading: boolean) => void;
+  onLoading?: (loading: boolean) => void;
   onReady?: () => void;
+  onConnectionLost?: () => void;
+  onReconnecting?: () => void;
 }
 
 class MobileStreamService {
@@ -19,12 +21,20 @@ class MobileStreamService {
   private consecutiveFailures: number = 0;
   private hasFirstPlay: boolean = false; // 追蹤是否已經成功播放過
   
+  // 新增：重連控制
+  private lastReconnectTime: number = 0;
+  private reconnectCooldown: number = 5000; // 5秒重連冷卻時間
+  private isReconnecting: boolean = false;
+  private connectionMonitorInterval: NodeJS.Timeout | null = null;
+  private lastPlayTime: number = 0;
+  private stallDetectionTimeout: NodeJS.Timeout | null = null;
+  
   // 手機端專用配置 - minimal intervention
   private readonly mobileConfig = {
-    maxRetries: 1,
+    maxRetries: 3, // 增加重試次數
     retryDelay: 5000,
-    // 移除播放監控相關配置
     networkRetryDelay: 3000,
+    stallDetectionDelay: 10000, // 10秒無播放視為停滯
   };
 
   constructor(config: MobileStreamServiceConfig = {}) {
@@ -42,55 +52,150 @@ class MobileStreamService {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0',
         }
       });
       const txt = await resp.text();
       return txt.toLowerCase().includes('h265') || txt.toLowerCase().includes('hevc');
-    } catch {
-      return false;
+    } catch (error) {
+      console.warn('手機端編解碼器檢測失敗:', error);
+      return false; // 預設為H264
     }
   }
 
-  // 簡化的連線監控 - 只監控嚴重錯誤，不干預播放狀態
+  // 新增：智能連線監控 - 偵測播放異常並自動重連
   private startConnectionMonitoring() {
-    // 移除所有播放狀態監控，只保留基本的連線狀態檢查
-    // HLS.js 會自己處理緩衝和播放狀態
-    console.log('手機端啟動簡化連線監控 - 讓HLS自己處理播放狀態')
+    this.stopConnectionMonitoring()
+    
+    console.log('手機端啟動智能連線監控')
+    
+    // 每2秒檢查一次播放狀態
+    this.connectionMonitorInterval = setInterval(() => {
+      if (this.isDestroyed || !this.video || this.isReconnecting) return
+      
+      const currentTime = this.video.currentTime
+      const now = Date.now()
+      
+      // 檢查是否有播放進度
+      if (currentTime > 0) {
+        this.lastPlayTime = now
+        this.consecutiveFailures = 0 // 重置失敗計數
+      } else if (this.hasFirstPlay && (now - this.lastPlayTime) > this.mobileConfig.stallDetectionDelay) {
+        // 如果已經播放過但現在停滯超過10秒，視為連線異常
+        console.warn('手機端偵測到播放停滯，準備重連')
+        this.handleConnectionLoss()
+      }
+      
+      // 檢查視頻是否意外暫停
+      if (this.hasFirstPlay && this.video.paused && !this.video.ended) {
+        console.warn('手機端偵測到意外暫停')
+        this.video.play().catch(() => {
+          console.warn('恢復播放失敗，可能需要重連')
+          this.handleConnectionLoss()
+        })
+      }
+    }, 2000)
   }
 
-  private async attemptInitialPlay(video: HTMLVideoElement, retryCount = 0) {
-    if (retryCount >= this.mobileConfig.maxRetries) {
-      // 移除錯誤訊息顯示，靜默處理
-      console.warn('手機端初始播放失敗，但不顯示錯誤訊息')
-      this.config.onLoading?.(false)
+  private stopConnectionMonitoring() {
+    if (this.connectionMonitorInterval) {
+      clearInterval(this.connectionMonitorInterval)
+      this.connectionMonitorInterval = null
+    }
+    if (this.stallDetectionTimeout) {
+      clearTimeout(this.stallDetectionTimeout)
+      this.stallDetectionTimeout = null
+    }
+  }
+
+  // 新增：處理連線中斷
+  private handleConnectionLoss() {
+    if (this.isReconnecting || this.isDestroyed) return
+    
+    const now = Date.now()
+    if (now - this.lastReconnectTime < this.reconnectCooldown) {
+      console.log(`手機端重連冷卻中，剩餘 ${Math.ceil((this.reconnectCooldown - (now - this.lastReconnectTime)) / 1000)} 秒`)
       return
     }
+    
+    this.lastReconnectTime = now
+    this.isReconnecting = true
+    this.consecutiveFailures++
+    
+    console.log(`手機端開始重連 (第 ${this.consecutiveFailures} 次)`)
+    
+    // 通知UI顯示重連狀態
+    this.config.onConnectionLost?.()
+    this.config.onReconnecting?.()
+    this.config.onLoading?.(true)
+    
+    // 如果重連次數過多，停止嘗試
+    if (this.consecutiveFailures > this.mobileConfig.maxRetries) {
+      console.error('手機端重連次數超過限制，停止重連')
+      this.config.onError?.('連線失敗次數過多，請檢查網路連線')
+      this.config.onLoading?.(false)
+      this.isReconnecting = false
+      return
+    }
+    
+    // 執行重連
+    this.performReconnect()
+  }
 
+  // 新增：執行重連
+  private async performReconnect() {
     try {
-      video.muted = true
-      video.playsInline = true
+      console.log('手機端執行重連...')
       
-      // 直接自動播放，不等待用戶交互
-      const playPromise = video.play()
-      if (playPromise !== undefined) {
-        await playPromise
-        this.config.onLoading?.(false)
-        this.hasFirstPlay = true
-        console.log('手機端初始播放成功')
+      // 清理現有連線
+      if (this.hls) {
+        this.hls.destroy()
+        this.hls = null
       }
-    } catch (error) {
-      console.warn(`手機端初始播放失敗，重試 ${retryCount + 1}/${this.mobileConfig.maxRetries}`, error)
+      if (this.h265Player) {
+        this.h265Player.destroy()
+        this.h265Player = null
+      }
       
-      if (retryCount < this.mobileConfig.maxRetries) {
-        setTimeout(() => {
-          this.attemptInitialPlay(video, retryCount + 1)
-        }, this.mobileConfig.retryDelay)
+      // 重置視頻元素
+      if (this.video) {
+        this.video.pause()
+        this.video.src = ''
+        this.video.load()
+      }
+      
+      // 等待一下再重新初始化
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      if (this.isDestroyed) return
+      
+      // 重新初始化串流
+      const isH265 = await this.detectStreamCodec(this.streamUrl)
+      const url = this.streamUrl.endsWith('/index.m3u8') ? this.streamUrl : `${this.streamUrl}/index.m3u8`
+      const noCacheUrl = this.addNoCacheParam(url)
+      
+      if (isH265) {
+        await this.initH265Stream(this.video!, noCacheUrl)
       } else {
-        // 移除錯誤訊息顯示
-        console.warn('手機端播放失敗，但不顯示錯誤訊息')
-        this.config.onLoading?.(false)
+        await this.initMobileHLSStream(this.video!, noCacheUrl)
+      }
+      
+      console.log('手機端重連成功')
+      this.isReconnecting = false
+      this.config.onLoading?.(false)
+      
+    } catch (error) {
+      console.error('手機端重連失敗:', error)
+      this.isReconnecting = false
+      this.config.onError?.(`重連失敗: ${error}`)
+      this.config.onLoading?.(false)
+      
+      // 如果還有重連機會，設置下次重連
+      if (this.consecutiveFailures <= this.mobileConfig.maxRetries) {
+        setTimeout(() => {
+          if (!this.isDestroyed) {
+            this.handleConnectionLoss()
+          }
+        }, this.mobileConfig.retryDelay)
       }
     }
   }
@@ -100,14 +205,15 @@ class MobileStreamService {
     this.streamUrl = streamUrl;
     this.isDestroyed = false;
     this.hasFirstPlay = false; // 重置播放狀態
+    this.isReconnecting = false; // 重置重連狀態
+    this.consecutiveFailures = 0; // 重置失敗計數
+    this.lastPlayTime = Date.now(); // 初始化播放時間
     
     this.config.onLoading?.(true);
     this.config.onError?.("");
 
     // 清理之前的監控
-    if (this.playCheckInterval) {
-      clearInterval(this.playCheckInterval);
-    }
+    this.stopConnectionMonitoring();
 
     try {
       const isH265 = await this.detectStreamCodec(streamUrl);
@@ -120,8 +226,9 @@ class MobileStreamService {
         await this.initMobileHLSStream(video, noCacheUrl);
       }
 
-      // 移除播放監控 - 讓HLS自己處理
-      console.log('手機端串流初始化完成 - 交給HLS自己管理播放狀態')
+      // 啟動連線監控
+      this.startConnectionMonitoring();
+      console.log('手機端串流初始化完成，連線監控已啟動')
     } catch (error: any) {
       console.error('手機端初始化錯誤:', error);
       this.config.onError?.(`初始化錯誤: ${error.message}`);
@@ -180,7 +287,11 @@ class MobileStreamService {
       loadedmetadata: () => {
         console.log('手機端原生HLS元數據已載入');
         // 直接自動播放，不需要用戶交互
-        this.attemptInitialPlay(video);
+        video.muted = true;
+        video.playsInline = true;
+        video.play().catch(err => {
+          console.warn('loadedmetadata時播放失敗:', err);
+        });
       },
       
       canplay: () => {
@@ -229,7 +340,9 @@ class MobileStreamService {
         if (!this.hasFirstPlay) {
           setTimeout(() => {
             video.load();
-            this.attemptInitialPlay(video);
+            video.play().catch(err => {
+              console.warn('stalled時播放失敗:', err);
+            });
           }, 1000);
         }
       },
@@ -267,7 +380,6 @@ class MobileStreamService {
       xhrSetup: (xhr) => {
         xhr.timeout = 15000; // 增加超時時間
         xhr.setRequestHeader('Cache-Control', 'no-cache');
-        xhr.setRequestHeader('Pragma', 'no-cache');
       }
     });
     
@@ -286,7 +398,11 @@ class MobileStreamService {
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
       console.log('手機端HLS.js清單已解析');
       // 直接自動播放
-      this.attemptInitialPlay(video);
+      video.muted = true;
+      video.playsInline = true;
+      video.play().catch(err => {
+        console.warn('manifest parsed時播放失敗:', err);
+      });
     });
 
     hls.on(Hls.Events.FRAG_LOADED, () => {
@@ -353,6 +469,9 @@ class MobileStreamService {
 
   destroy() {
     this.isDestroyed = true;
+    
+    // 停止連線監控
+    this.stopConnectionMonitoring();
     
     // 清理事件監聽器
     if (this.video && (this.video as any)._mobileStreamEventHandlers) {
