@@ -108,6 +108,27 @@ NEXT_PUBLIC_STREAM_BASE_URL=your_stream_server
 - Glassmorphism 設計風格
 - 符合 WCAG AA 對比標準
 
+## mediamtx.yml 設定内容
+```yaml
+hls: yes
+hlsAddress: :8888
+hlsEncryption: no
+hlsServerKey: server.key
+hlsServerCert: server.crt
+hlsAllowOrigin: '*'
+hlsTrustedProxies: []
+hlsAlwaysRemux: yes
+# hlsVariant: lowLatency
+# 使用 fmp4 格式，若要手機正常播放避免使用 lowLatency
+hlsVariant: fmp4
+hlsSegmentCount: 3
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 50M
+hlsDirectory: ''
+hlsMuxerCloseAfter: 60s
+```
+
 ## 🔄 更新日誌
 
 ### v2.1.0 - Safari 優化版本
