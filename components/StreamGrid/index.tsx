@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import StreamCell from "../StreamCell"
 import { Button } from "@/components/ui/button"
 import { LayoutGrid, Grid2X2, Grid3X3 } from "lucide-react"
@@ -33,25 +33,9 @@ export default function StreamGrid({
   cameraVisibility = {}
 }: StreamGridProps) {
   const [internalGridLayout, setInternalGridLayout] = useState<1 | 4 | 9 | 16>(9); // 默認9宮格
-  const [containerKey, setContainerKey] = useState(0); // 強制重新渲染的 key
   
   // 使用外部提供的gridLayout或内部狀態
   const currentLayout = onGridLayoutChange ? gridLayout : internalGridLayout;
-  
-  // 監聽窗口尺寸變化，確保佈局正確更新
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    
-    const handleResize = () => {
-      // 延遲觸發重新渲染，確保佈局計算正確
-      setTimeout(() => {
-        setContainerKey(prev => prev + 1)
-      }, 350) // 稍微延遲一點，配合 sidebar 動畫時間 (300ms)
-    }
-    
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
   
   // 更新網格布局
   const updateGridLayout = (layout: 1 | 4 | 9 | 16) => {
@@ -113,20 +97,20 @@ export default function StreamGrid({
     <div className={styles.container}>
       {/* 主要內容區域 */}
       <div className={isMobile ? styles.contentMobile : styles.content}>
-        <div key={containerKey} className={getGridStyle()}>
+        <div className={getGridStyle()}>
           {(isMobile ? streams : streams.slice(0, currentLayout)).map((streamUrl, displayIndex) => {
             // 在移除模式下，找到對應的原始索引
-            let originalIndex = displayIndex
+            let originalIndex = displayIndex;
             if (isRemoveMode && originalStreams) {
               // 在原始串流中找到當前串流的真實索引
-              let currentStreamCount = 0
+              let currentStreamCount = 0;
               for (let i = 0; i < originalStreams.length; i++) {
                 if (originalStreams[i] === streamUrl) {
                   if (currentStreamCount === displayIndex) {
-                    originalIndex = i
-                    break
+                    originalIndex = i;
+                    break;
                   }
-                  currentStreamCount++
+                  currentStreamCount++;
                 }
               }
             }

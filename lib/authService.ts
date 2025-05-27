@@ -16,15 +16,23 @@ export interface AuthError {
   error_description: string;
 }
 
+// 安全的瀏覽器環境檢測，避免 hydration 錯誤
+const isBrowser = typeof window !== 'undefined';
+
 // 檢測是否在開發環境且使用本地端點
-const isLocalDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+const isLocalDev = isBrowser && window.location.hostname === 'localhost';
 const SUPABASE_ENDPOINT = process.env.NEXT_PUBLIC_SUPABASE_API_URL || process.env.SUPABASE_API_URL || "http://streamcamkeelong.mooo.com"
 
 // 如果是本地開發環境，使用 API 代理路由避免 CORS 問題
 const API_BASE_URL = isLocalDev ? '/api/auth' : `${SUPABASE_ENDPOINT}/auth/v1`;
-console.log('SUPABASE_ENDPOINT:', SUPABASE_ENDPOINT)
-console.log('API_BASE_URL:', API_BASE_URL)
-console.log('isLocalDev:', isLocalDev)
+
+// 只在瀏覽器環境中輸出日誌，避免 hydration 錯誤
+if (isBrowser) {
+  console.log('SUPABASE_ENDPOINT:', SUPABASE_ENDPOINT)
+  console.log('API_BASE_URL:', API_BASE_URL)
+  console.log('isLocalDev:', isLocalDev)
+}
+
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
 // Token 管理
@@ -34,7 +42,7 @@ export class TokenManager {
   private static readonly USER_KEY = 'monitor_hub_user';
 
   static saveToken(authResponse: AuthResponse): void {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       localStorage.setItem(this.TOKEN_KEY, authResponse.access_token);
       localStorage.setItem(this.REFRESH_TOKEN_KEY, authResponse.refresh_token);
       localStorage.setItem(this.USER_KEY, JSON.stringify(authResponse.user));
@@ -42,21 +50,21 @@ export class TokenManager {
   }
 
   static getToken(): string | null {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       return localStorage.getItem(this.TOKEN_KEY);
     }
     return null;
   }
 
   static getRefreshToken(): string | null {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       return localStorage.getItem(this.REFRESH_TOKEN_KEY);
     }
     return null;
   }
 
   static getUser(): any | null {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       const userStr = localStorage.getItem(this.USER_KEY);
       return userStr ? JSON.parse(userStr) : null;
     }
@@ -64,7 +72,7 @@ export class TokenManager {
   }
 
   static clearTokens(): void {
-    if (typeof window !== 'undefined') {
+    if (isBrowser) {
       localStorage.removeItem(this.TOKEN_KEY);
       localStorage.removeItem(this.REFRESH_TOKEN_KEY);
       localStorage.removeItem(this.USER_KEY);
@@ -72,6 +80,8 @@ export class TokenManager {
   }
 
   static isAuthenticated(): boolean {
+    // 在服務器端總是返回 false，避免 hydration 錯誤
+    if (!isBrowser) return false;
     return !!this.getToken();
   }
 }
@@ -194,9 +204,10 @@ export class AuthService {
   }
 
   /**
-   * 檢查認證狀態
+   * 檢查認證狀態 - 避免 hydration 錯誤
    */
   static isAuthenticated(): boolean {
+    // 在服務器端總是返回 false，避免 hydration 錯誤
     return TokenManager.isAuthenticated();
   }
 

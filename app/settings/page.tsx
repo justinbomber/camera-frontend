@@ -8,28 +8,18 @@ import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import Sidebar, { SidebarMode } from '@/components/Sidebar'
 import { useDeviceDetection } from '@/lib/deviceUtils'
+import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 
 export default function SettingsPage() {
   const router = useRouter()
   const isMobile = useDeviceDetection()
   
-  // sidebar 狀態管理，從 localStorage 讀取偏好設定
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebar-mode')
-      if (saved && ['expanded', 'collapsed', 'hover'].includes(saved)) {
-        return saved as SidebarMode
-      }
-    }
-    return 'expanded'
-  })
+  // 使用安全的 localStorage hook 避免 hydration 錯誤
+  const [sidebarMode, setSidebarMode] = useLocalStorage<SidebarMode>('sidebar-mode', 'expanded')
   
   // 保存 sidebar 模式到 localStorage
   const handleSidebarModeChange = (mode: SidebarMode) => {
     setSidebarMode(mode)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebar-mode', mode)
-    }
   }
 
   return (

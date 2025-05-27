@@ -106,16 +106,19 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({
   );
 };
 
-// Toast Hook
+// Toast Hook - 使用更安全的ID生成方式
 export const useToast = () => {
   const [toasts, setToasts] = useState<Array<{
     id: string;
     type: ToastType;
     message: string;
   }>>([]);
+  const [counter, setCounter] = useState(0);
 
   const addToast = (type: ToastType, message: string) => {
-    const id = Date.now().toString();
+    // 使用計數器而不是時間戳來避免hydration錯誤
+    const id = `toast-${counter}`;
+    setCounter(prev => prev + 1);
     setToasts(prev => [...prev, { id, type, message }]);
   };
 

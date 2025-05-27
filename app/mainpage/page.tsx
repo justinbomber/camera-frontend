@@ -15,6 +15,7 @@ import { useDeviceDetection } from "@/lib/deviceUtils"
 import { Grid4x4Icon } from "@/components/ui/grid4x4-icon"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 import { AuthService } from "@/lib/authService"
+import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 
 // Default streams to load on initial page load
 const STREAM_ENDPOINT = process.env.NEXT_PUBLIC_STREAM_ENDPOINT || "http://streamcamkeelong.mooo.com"
@@ -48,37 +49,14 @@ export default function MonitoringDashboard() {
   const [gridLayout, setGridLayout] = useState<1 | 4 | 9 | 16>(9)
   // 新增：攝影機顯示狀態管理
   const [cameraVisibility, setCameraVisibility] = useState<{ [key: number]: boolean }>({})
-  // 新增：初始載入狀態，檢查是否已經載入過
-  const [isInitialLoading, setIsInitialLoading] = useState(() => {
-    // 檢查 sessionStorage 中是否已經標記為已載入
-    if (typeof window !== 'undefined') {
-      const hasLoaded = sessionStorage.getItem('camera-loaded')
-      return !hasLoaded // 如果沒有標記，則需要載入
-    }
-    return true // SSR 時預設需要載入
-  })
+  // 新增：初始載入狀態 - 修復 hydration 錯誤
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
   // 新增：手機端攝影機切換索引
   const [currentMobileStreamIndex, setCurrentMobileStreamIndex] = useState<number>(0)
   // 新增：用戶下拉選單狀態
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  // 新增：sidebar 狀態管理，從 localStorage 讀取偏好設定
-  const [sidebarMode, setSidebarMode] = useState<SidebarMode>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebar-mode')
-      if (saved && ['expanded', 'collapsed', 'hover'].includes(saved)) {
-        return saved as SidebarMode
-      }
-    }
-    return 'expanded'
-  })
-  
-  // 保存 sidebar 模式到 localStorage
-  const handleSidebarModeChange = (mode: SidebarMode) => {
-    setSidebarMode(mode)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebar-mode', mode)
-    }
-  }
+  // 使用安全的 localStorage hook 避免 hydration 錯誤
+  const [sidebarMode, setSidebarMode] = useLocalStorage<SidebarMode>('sidebar-mode', 'expanded')
   
   // 使用新的設備檢測 Hook
   const isMobile = useDeviceDetection()
@@ -113,8 +91,18 @@ export default function MonitoringDashboard() {
   // Load default streams on initial page load
   useEffect(() => {
     const loadInitialStreams = async () => {
+      // 檢查 sessionStorage（但要安全地處理）
+      let hasLoaded = false
+      try {
+        if (typeof window !== 'undefined') {
+          hasLoaded = sessionStorage.getItem('camera-loaded') === 'true'
+        }
+      } catch (error) {
+        console.warn('無法讀取 sessionStorage:', error)
+      }
+
       // 如果已經載入過，直接設置串流而不顯示載入動畫
-      if (!isInitialLoading) {
+      if (!isInitialLoading || hasLoaded) {
         const initialStreams = [...streams]
         const initialVisibility: { [key: number]: boolean } = {}
         DEFAULT_STREAMS.forEach((stream, index) => {
@@ -125,6 +113,9 @@ export default function MonitoringDashboard() {
         })
         setStreams(initialStreams)
         setCameraVisibility(initialVisibility)
+        if (isInitialLoading) {
+          setIsInitialLoading(false)
+        }
         return
       }
       
@@ -144,8 +135,12 @@ export default function MonitoringDashboard() {
       setIsInitialLoading(false)
       
       // 標記為已載入，下次訪問時不再顯示載入動畫
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('camera-loaded', 'true')
+      try {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('camera-loaded', 'true')
+        }
+      } catch (error) {
+        console.warn('無法寫入 sessionStorage:', error)
       }
     }
     
@@ -420,7 +415,6 @@ export default function MonitoringDashboard() {
         {/* 串流網格 - 佔據全螢幕 */}
         <div className="flex-grow h-full transition-all duration-300 ease-in-out overflow-hidden">
           <StreamGrid
-            key={`desktop-grid-${sidebarMode}`}
             streams={isRemoveMode ? streams.filter(s => s !== null) as string[] : getValidStreams()}
             originalStreams={streams}
             isRemoveMode={isRemoveMode}
@@ -527,7 +521,7 @@ export default function MonitoringDashboard() {
     <div className="flex h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black overflow-hidden">
       {/* Sidebar - 只在桌面版顯示 */}
       {!isMobile && (
-        <Sidebar mode={sidebarMode} onModeChange={handleSidebarModeChange} />
+        <Sidebar mode={sidebarMode} onModeChange={setSidebarMode} />
       )}
       
       {/* 主內容區域 */}

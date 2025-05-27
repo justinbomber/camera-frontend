@@ -23,21 +23,21 @@ export const isMobileDevice = (): boolean => {
 };
 
 export const useDeviceDetection = () => {
+  // 初始狀態始終為 false 以避免 hydration 錯誤
   const [isMobile, setIsMobile] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    // 客戶端 hydration 完成後再進行設備檢測
+    setIsHydrated(true);
+    
     const checkDevice = () => {
       try {
         const mobile = isMobileDevice();
         setIsMobile(mobile);
-        if (!isInitialized) {
-          setIsInitialized(true);
-        }
       } catch (error) {
         console.warn('設備檢測失敗:', error);
         setIsMobile(false);
-        setIsInitialized(true);
       }
     };
 
@@ -59,7 +59,8 @@ export const useDeviceDetection = () => {
       window.removeEventListener('resize', debouncedCheckDevice);
       window.removeEventListener('orientationchange', debouncedCheckDevice);
     };
-  }, [isInitialized]);
+  }, []);
 
-  return isMobile;
+  // 在 hydration 完成前返回預設值
+  return isHydrated ? isMobile : false;
 }; 

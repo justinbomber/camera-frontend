@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 
 interface LoadingScreenProps {
@@ -11,8 +11,30 @@ export default function LoadingScreen({
   isMobile = false 
 }: LoadingScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isClient, setIsClient] = useState(false)
+  // 固定的粒子配置，避免隨機數導致的 hydration 錯誤
+  const [particleData, setParticleData] = useState<Array<{
+    left: number
+    top: number
+    delay: number
+  }>>([])
 
   useEffect(() => {
+    // 標記為客戶端渲染並生成粒子數據
+    setIsClient(true)
+    
+    // 只在客戶端生成隨機粒子數據
+    const particles = Array.from({ length: isMobile ? 20 : 40 }).map((_, i) => ({
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 2,
+    }))
+    setParticleData(particles)
+  }, [isMobile])
+
+  useEffect(() => {
+    if (!isClient) return
+    
     const canvas = canvasRef.current
     if (!canvas) return
     
@@ -21,12 +43,14 @@ export default function LoadingScreen({
     
     let running = true
     let animationId: number
+    let startTime = performance.now()
 
     const draw = () => {
       if (!running) return
       
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const t = Date.now() / 1000
+      // 使用 performance.now() 和 startTime 來計算相對時間，避免 hydration 錯誤
+      const t = (performance.now() - startTime) / 1000
       
       // 主圓環
       const centerX = canvas.width / 2
@@ -74,7 +98,7 @@ export default function LoadingScreen({
         cancelAnimationFrame(animationId)
       }
     }
-  }, [isMobile])
+  }, [isMobile, isClient])
 
   return (
     <motion.div
@@ -82,30 +106,32 @@ export default function LoadingScreen({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-gray-700 via-gray-800 to-black"
     >
-      {/* 背景粒子效果 */}
-      <div className="absolute inset-0 overflow-hidden">
-        {Array.from({ length: isMobile ? 20 : 40 }).map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-blue-300/30 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -20, 0],
-              opacity: [0.3, 0.8, 0.3],
-            }}
-            transition={{
-              duration: 2 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
+      {/* 背景粒子效果 - 只在客戶端渲染 */}
+      {isClient && (
+        <div className="absolute inset-0 overflow-hidden">
+          {particleData.map((particle, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-yellow-400/30 rounded-full"
+              style={{
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+              }}
+              animate={{
+                y: [0, -20, 0],
+                opacity: [0.3, 0.8, 0.3],
+              }}
+              transition={{
+                duration: 2 + Math.random() * 2,
+                repeat: Infinity,
+                delay: particle.delay,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* 主要載入動畫 */}
       <div className="relative z-10 flex flex-col items-center">
@@ -122,12 +148,12 @@ export default function LoadingScreen({
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center"
         >
-          <h2 className={`font-bold text-gray-800 mb-2 ${
+          <h2 className={`font-bold text-yellow-400 mb-2 ${
             isMobile ? 'text-xl' : 'text-2xl'
           }`}>
             monitor.hub
           </h2>
-          <p className={`text-gray-600 ${
+          <p className={`text-gray-300 ${
             isMobile ? 'text-sm' : 'text-base'
           }`}>
             {message}
@@ -139,7 +165,7 @@ export default function LoadingScreen({
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ delay: 0.5, duration: 2, ease: "easeInOut" }}
-          className={`mt-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full ${
+          className={`mt-6 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full ${
             isMobile ? 'h-1 w-32' : 'h-1.5 w-48'
           }`}
           style={{ transformOrigin: 'left' }}

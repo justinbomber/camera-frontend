@@ -10,17 +10,21 @@ export default function HomePage() {
   const router = useRouter()
   const isMobile = useDeviceDetection()
   const [isRedirecting, setIsRedirecting] = useState(false)
-  const [hasChecked, setHasChecked] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
-    // 避免重複檢查和重定向
-    if (isRedirecting || hasChecked) return
+    // 標記 hydration 完成
+    setIsHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    // 只有在 hydration 完成後才進行重定向邏輯
+    if (!isHydrated || isRedirecting) return
 
     const handleRedirect = () => {
       try {
         console.log('根路由: 開始認證檢查')
         setIsRedirecting(true)
-        setHasChecked(true)
         
         // 檢查用戶認證狀態
         const isAuthenticated = AuthService.isAuthenticated()
@@ -37,7 +41,6 @@ export default function HomePage() {
       } catch (error) {
         console.error('根路由: 認證檢查失敗:', error)
         // 發生錯誤時導向到登入頁面
-        setHasChecked(true)
         router.replace('/login')
       }
     }
@@ -46,12 +49,13 @@ export default function HomePage() {
     const timer = setTimeout(handleRedirect, 500)
 
     return () => clearTimeout(timer)
-  }, [router, isRedirecting, hasChecked])
+  }, [router, isRedirecting, isHydrated])
 
+  // 在 hydration 完成前顯示載入畫面，使用預設的 isMobile 值
   return (
     <LoadingScreen 
       message="正在啟動 monitor.hub..." 
-      isMobile={isMobile} 
+      isMobile={isHydrated ? isMobile : false} 
     />
   )
 } 

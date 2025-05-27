@@ -203,11 +203,14 @@ export default function MobileStreamPlayer({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
     let running = true
+    let animationId: number
+    let startTime = performance.now()
     
     const draw = () => {
       if (!running) return
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const t = Date.now() / 1000
+      // 使用相對時間避免 hydration 錯誤
+      const t = (performance.now() - startTime) / 1000
       
       // 根據狀態使用不同顏色
       let color = '#3b82f6' // 預設藍色
@@ -222,15 +225,18 @@ export default function MobileStreamPlayer({
       ctx.strokeStyle = color
       ctx.lineWidth = 6
       ctx.stroke()
+      
+      animationId = requestAnimationFrame(draw)
     }
     
-    const loop = () => { 
-      draw() 
-      if(running) requestAnimationFrame(loop) 
-    }
-    loop()
+    draw()
     
-    return () => { running = false }
+    return () => { 
+      running = false
+      if (animationId) {
+        cancelAnimationFrame(animationId)
+      }
+    }
   }, [isLoading, connectionStatus, isReconnecting])
 
   // 連線狀態指示器
