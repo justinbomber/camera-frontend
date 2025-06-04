@@ -23,7 +23,7 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [isReconnecting, setIsReconnecting] = useState<boolean>(false)
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected')
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting')
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
   const [isMuted, setIsMuted] = useState<boolean>(true)
   
@@ -37,22 +37,44 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
 
     const video = videoRef.current
     
+    // 設置初始連接狀態
+    setConnectionStatus('connecting')
+    setIsLoading(true)
+    setErrorMessage("")
+    
+    // 設置初始化超時，給串流更多時間連接
+    const initTimeout = setTimeout(() => {
+      if (connectionStatus === 'connecting') {
+        console.warn('StreamDetail 串流初始化超時')
+        setConnectionStatus('error')
+        setErrorMessage('連線超時，請稍後再試')
+        setIsLoading(false)
+      }
+    }, 15000) // 15秒超時
+    
     streamServiceRef.current = new StreamService({
       onError: (message) => {
         console.error('StreamDetail 錯誤:', message)
-        setConnectionStatus('error')
-        setErrorMessage(message)
+        clearTimeout(initTimeout)
+        // 只有在不是重連狀態時才設為錯誤
+        if (!isReconnecting) {
+          setConnectionStatus('error')
+          setErrorMessage(message)
+        }
         setIsLoading(false)
         setIsReconnecting(false)
       },
       onLoading: (loading) => {
         setIsLoading(loading)
+        // 載入完成且當前不是已連線狀態時，設為已連線
         if (!loading && connectionStatus !== 'connected') {
+          clearTimeout(initTimeout)
           setConnectionStatus('connected')
           setErrorMessage("")
         }
       },
       onReady: () => {
+        clearTimeout(initTimeout)
         setIsLoading(false)
         setConnectionStatus('connected')
         setErrorMessage("")
@@ -63,23 +85,26 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
     streamServiceRef.current.initializeStream(video, streamUrl)
       .catch(error => {
         console.error('串流初始化失敗:', error)
+        clearTimeout(initTimeout)
         setErrorMessage('串流初始化失敗')
         setConnectionStatus('error')
         setIsLoading(false)
       })
 
     return () => {
+      clearTimeout(initTimeout)
       if (streamServiceRef.current) {
         streamServiceRef.current.destroy()
       }
     }
-  }, [streamUrl, connectionStatus])
+  }, [streamUrl]) // 移除 connectionStatus 依賴避免無限循環
 
   // 手動重連功能
   const handleManualReconnect = async () => {
     if (!streamUrl || !videoRef.current) return
     
     setIsReconnecting(true)
+    setConnectionStatus('connecting')
     setErrorMessage("")
     
     try {
@@ -164,7 +189,9 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
       // 使用相對時間避免 hydration 錯誤
       const t = (performance.now() - startTime) / 1000
       
-      const color = isReconnecting ? '#f59e0b' : '#3b82f6'
+      // 根據連線狀態選擇顏色
+      const color = isReconnecting ? '#f59e0b' : 
+                    connectionStatus === 'connecting' ? '#f97316' : '#3b82f6'
       
       ctx.beginPath()
       ctx.arc(canvas.width/2, canvas.height/2, 40, 0, Math.PI*2*(0.5 + 0.5*Math.sin(t*2)))
@@ -183,7 +210,7 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
         cancelAnimationFrame(animationId)
       }
     }
-  }, [isLoading, isReconnecting])
+  }, [isLoading, isReconnecting, connectionStatus])
 
   if (!streamUrl) {
     return (
@@ -236,17 +263,20 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
           {/* 連線狀態 */}
           <div className={`flex items-center space-x-2 px-3 py-1 rounded-md ${
             connectionStatus === 'connected' ? 'bg-green-600/20 text-green-400' :
+            connectionStatus === 'connecting' ? 'bg-orange-600/20 text-orange-400' :
             connectionStatus === 'error' ? 'bg-red-600/20 text-red-400' :
             'bg-gray-600/20 text-gray-400'
           }`}>
             <div className={`w-2 h-2 rounded-full ${
               connectionStatus === 'connected' ? 'bg-green-400' :
+              connectionStatus === 'connecting' ? 'bg-orange-400 animate-pulse' :
               connectionStatus === 'error' ? 'bg-red-400' :
               'bg-gray-400'
             }`} />
             <span className="text-sm">
               {isReconnecting ? '重連中...' :
                connectionStatus === 'connected' ? '已連線' :
+               connectionStatus === 'connecting' ? '連接中...' :
                connectionStatus === 'error' ? '連線錯誤' : '未連線'}
             </span>
           </div>
@@ -287,68 +317,71 @@ export default function StreamDetailPage({ params }: StreamDetailPageProps) {
       </div>
 
       {/* 主要視頻區域 */}
-      <div className="flex-1 relative bg-black flex items-center justify-center">
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
-          muted={isMuted}
-          preload="metadata"
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            console.error('StreamDetail 視頻錯誤:', e)
-            setConnectionStatus('error')
-            setErrorMessage('視頻播放錯誤')
-          }}
-          onPlay={() => {
-            setConnectionStatus('connected')
-            setIsLoading(false)
-            setErrorMessage("")
-          }}
-          onCanPlay={() => {
-            setIsLoading(false)
-            if (videoRef.current && videoRef.current.paused) {
-              videoRef.current.play().catch(err => {
-                console.warn('StreamDetail canPlay時播放失敗:', err)
-              })
-            }
-          }}
-        />
+      <div className="flex-1 relative bg-black flex items-center justify-center p-4">
+        <div className="relative w-full h-full max-w-6xl max-h-[80vh] flex items-center justify-center">
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            muted={isMuted}
+            preload="metadata"
+            className="w-full h-full object-contain rounded-lg shadow-2xl"
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+            onError={(e) => {
+              console.error('StreamDetail 視頻錯誤:', e)
+              setConnectionStatus('error')
+              setErrorMessage('視頻播放錯誤')
+            }}
+            onPlay={() => {
+              setConnectionStatus('connected')
+              setIsLoading(false)
+              setErrorMessage("")
+            }}
+            onCanPlay={() => {
+              setIsLoading(false)
+              if (videoRef.current && videoRef.current.paused) {
+                videoRef.current.play().catch(err => {
+                  console.warn('StreamDetail canPlay時播放失敗:', err)
+                })
+              }
+            }}
+          />
 
-        {/* 載入動畫 */}
-        {(isLoading || isReconnecting) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-20">
-            <canvas 
-              ref={loadingCanvasRef} 
-              width={160} 
-              height={160} 
-              style={{ width: 100, height: 100, borderRadius: 16 }} 
-            />
-            <div className="mt-4 text-lg text-white text-center">
-              {isReconnecting ? '重新連線中...' : '載入中...'}
+          {/* 載入動畫 */}
+          {(isLoading || isReconnecting) && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm z-20 rounded-lg">
+              <canvas 
+                ref={loadingCanvasRef} 
+                width={160} 
+                height={160} 
+                style={{ width: 100, height: 100, borderRadius: 16 }} 
+              />
+              <div className="mt-4 text-lg text-white text-center">
+                {isReconnecting ? '重新連線中...' : '載入中...'}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 錯誤顯示 */}
-        {connectionStatus === 'error' && errorMessage && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-20">
-            <Card className="w-96">
-              <CardContent className="p-6 text-center">
-                <h3 className="text-lg font-semibold text-red-600 mb-2">連線錯誤</h3>
-                <p className="text-gray-600 mb-4">{errorMessage}</p>
-                <div className="flex space-x-2 justify-center">
-                  <Button onClick={handleManualReconnect} disabled={isReconnecting}>
-                    重新連線
-                  </Button>
-                  <Button onClick={handleGoBack} variant="outline">
-                    返回主頁面
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          {/* 錯誤顯示 */}
+          {connectionStatus === 'error' && errorMessage && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-20 rounded-lg">
+              <Card className="w-96">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-lg font-semibold text-red-600 mb-2">連線錯誤</h3>
+                  <p className="text-gray-600 mb-4">{errorMessage}</p>
+                  <div className="flex space-x-2 justify-center">
+                    <Button onClick={handleManualReconnect} disabled={isReconnecting}>
+                      重新連線
+                    </Button>
+                    <Button onClick={handleGoBack} variant="outline">
+                      返回主頁面
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
