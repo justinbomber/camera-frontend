@@ -77,7 +77,7 @@ export default function CameraSelector({
           size="sm"
           onClick={selectAllCameras}
           disabled={selectedCameras.length === maxCameras || availableCameras.length === 0}
-          className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white disabled:opacity-50 text-xs py-1 h-7"
+          className="flex-1 text-yellow-400 border-yellow-400/50 hover:bg-yellow-400/10 hover:border-yellow-400/70 hover:text-yellow-300 disabled:opacity-50 disabled:text-gray-500 disabled:border-gray-600 text-xs py-1 h-7 transition-all duration-200"
         >
           全選 (最多{maxCameras}個)
         </Button>
@@ -86,7 +86,7 @@ export default function CameraSelector({
           size="sm"
           onClick={clearAllCameras}
           disabled={selectedCameras.length === 0}
-          className="flex-1 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white disabled:opacity-50 text-xs py-1 h-7"
+          className="flex-1 text-yellow-400 border-yellow-400/50 hover:bg-yellow-400/10 hover:border-yellow-400/70 hover:text-yellow-300 disabled:opacity-50 disabled:text-gray-500 disabled:border-gray-600 text-xs py-1 h-7 transition-all duration-200"
         >
           清空
         </Button>
@@ -110,10 +110,10 @@ export default function CameraSelector({
                   flex items-center gap-2 p-2 rounded-lg border cursor-pointer
                   transition-all duration-200
                   ${isSelected 
-                    ? 'bg-yellow-400/10 border-yellow-400/50 text-yellow-400' 
+                    ? 'bg-yellow-400/15 border-yellow-400/60 text-yellow-400 shadow-md shadow-yellow-400/20' 
                     : isDisabled
                     ? 'bg-gray-700/30 border-gray-600/30 text-gray-500 cursor-not-allowed'
-                    : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:bg-gray-700/70 hover:border-gray-500'
+                    : 'bg-gray-800/60 border-gray-600 text-gray-300 hover:bg-gray-700/80 hover:border-yellow-400/40'
                   }
                 `}
               >
@@ -122,10 +122,10 @@ export default function CameraSelector({
                   flex items-center justify-center w-5 h-5 rounded border-2 
                   transition-all duration-200
                   ${isSelected 
-                    ? 'bg-yellow-400 border-yellow-400' 
+                    ? 'bg-yellow-400 border-yellow-400 shadow-md shadow-yellow-400/50' 
                     : isDisabled
                     ? 'border-gray-600 bg-gray-700'
-                    : 'border-gray-500 hover:border-gray-400'
+                    : 'border-gray-500 hover:border-yellow-400/40'
                   }
                 `}>
                   {isSelected && (

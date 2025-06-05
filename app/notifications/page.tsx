@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Bell, ArrowLeft, AlertCircle, Info, CheckCircle } from 'lucide-react'
+import { Bell, ArrowLeft, AlertCircle, Info, CheckCircle, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import Sidebar, { SidebarMode } from '@/components/Sidebar'
 import { useDeviceDetection } from '@/lib/deviceUtils'
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
+import PhoneSidebar from '@/components/PhoneSidebar'
 
 export default function NotificationsPage() {
   const router = useRouter()
@@ -17,6 +18,9 @@ export default function NotificationsPage() {
   // 使用安全的 localStorage hook 避免 hydration 錯誤
   const [sidebarMode, setSidebarMode] = useLocalStorage<SidebarMode>('sidebar-mode', 'expanded')
   
+  // 手機端 sidebar 狀態
+  const [isPhoneSidebarOpen, setIsPhoneSidebarOpen] = useState(false)
+
   // 保存 sidebar 模式到 localStorage
   const handleSidebarModeChange = (mode: SidebarMode) => {
     setSidebarMode(mode)
@@ -41,14 +45,31 @@ export default function NotificationsPage() {
                 transition={{ duration: 0.5 }}
                 className="flex items-center gap-4 mb-8"
               >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => router.back()}
-                  className="text-gray-300 hover:text-white hover:bg-gray-700/80"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
+                {/* 手機端頭像按鈕 - 只在手機端顯示 */}
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsPhoneSidebarOpen(true)}
+                    className="hover:bg-gray-700/80 text-white rounded-full w-10 h-10 p-0"
+                  >
+                    <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-full shadow-lg border border-gray-600">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                  </Button>
+                )}
+                
+                {/* 桌面端返回按鈕 */}
+                {!isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.back()}
+                    className="text-gray-300 hover:text-white hover:bg-gray-700/80"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                )}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg shadow-lg">
                     <Bell className="h-6 w-6 text-white" />
@@ -123,6 +144,14 @@ export default function NotificationsPage() {
             </div>
           </div>
         </div>
+
+        {/* 手機端 Sidebar */}
+        {isMobile && (
+          <PhoneSidebar 
+            isOpen={isPhoneSidebarOpen} 
+            onClose={() => setIsPhoneSidebarOpen(false)} 
+          />
+        )}
       </div>
     </AuthGuard>
   )

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { History, ArrowLeft, Play, Pause, SkipBack, SkipForward, Settings, Camera, Clock, MapPin, X } from 'lucide-react'
+import { History, ArrowLeft, Play, Pause, SkipBack, SkipForward, Settings, Camera, Clock, MapPin, X, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/AuthGuard'
@@ -14,6 +14,7 @@ import TimeRangeSelector from './components/TimeRangeSelector'
 import CameraSelector from './components/CameraSelector'
 import LocationSelector, { locations } from './components/LocationSelector'
 import MasterProgressControl from './components/MasterProgressControl'
+import PhoneSidebar from '@/components/PhoneSidebar'
 
 export default function HistoryPage() {
   const router = useRouter()
@@ -34,6 +35,9 @@ export default function HistoryPage() {
   
   // 彈出panel狀態
   const [showSearchPanel, setShowSearchPanel] = useState(false)
+  
+  // 手機端 sidebar 狀態
+  const [isPhoneSidebarOpen, setIsPhoneSidebarOpen] = useState(false)
   
   // 保存 sidebar 模式到 localStorage
   const handleSidebarModeChange = (mode: SidebarMode) => {
@@ -119,17 +123,35 @@ export default function HistoryPage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center justify-between p-4 bg-gray-900/50 backdrop-blur-sm border-b border-gray-600/50"
+            className="flex items-center justify-between p-4 bg-gray-900/50 backdrop-blur-sm border-b border-gray-600/50 z-10"
           >
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => router.back()}
-                className="text-gray-300 hover:text-white hover:bg-gray-700/80"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+              {/* 手機端頭像按鈕 - 只在手機端顯示 */}
+              {isMobile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsPhoneSidebarOpen(true)}
+                  className="hover:bg-gray-700/80 text-white rounded-full w-10 h-10 p-0 mr-2"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-full shadow-lg border border-gray-600">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                </Button>
+              )}
+              
+              {/* 桌面端返回按鈕 */}
+              {!isMobile && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.back()}
+                  className="text-gray-300 hover:text-white hover:bg-gray-700/80"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              )}
+              
               <div className="flex items-center gap-2">
                 <History className="h-5 w-5 text-yellow-400" />
                 <span className="text-xl font-bold text-white">歷史影像</span>
@@ -441,6 +463,14 @@ export default function HistoryPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 手機端 Sidebar */}
+        {isMobile && (
+          <PhoneSidebar 
+            isOpen={isPhoneSidebarOpen} 
+            onClose={() => setIsPhoneSidebarOpen(false)} 
+          />
+        )}
       </div>
     </AuthGuard>
   )

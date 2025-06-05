@@ -47,8 +47,8 @@ export default function LocationSelector({
                   flex items-center gap-2 p-2 rounded-lg border cursor-pointer
                   transition-all duration-200
                   ${isSelected 
-                    ? 'bg-yellow-400/20 border-yellow-400/60 text-yellow-400' 
-                    : 'bg-gray-800/50 border-gray-600 text-white hover:bg-gray-700/70 hover:border-yellow-400/40'
+                    ? 'bg-yellow-400/20 border-yellow-400/70 text-yellow-400 shadow-lg shadow-yellow-400/20' 
+                    : 'bg-gray-800/60 border-gray-600 text-white hover:bg-gray-700/80 hover:border-yellow-400/50'
                   }
                 `}
               >
@@ -57,8 +57,8 @@ export default function LocationSelector({
                   flex items-center justify-center w-5 h-5 rounded border-2 
                   transition-all duration-200
                   ${isSelected 
-                    ? 'bg-yellow-400 border-yellow-400' 
-                    : 'border-gray-500 hover:border-gray-400'
+                    ? 'bg-yellow-400 border-yellow-400 shadow-md shadow-yellow-400/50' 
+                    : 'border-gray-500 hover:border-yellow-400/40'
                   }
                 `}>
                   {isSelected && (
@@ -104,7 +104,7 @@ export default function LocationSelector({
         <Button
           variant="outline"
           onClick={() => onLocationChange(null)}
-          className="w-full text-yellow-400 border-yellow-400/50 hover:bg-yellow-400/10 hover:text-yellow-300 text-sm py-2 h-8"
+          className="w-full text-yellow-400 border-yellow-400/60 hover:bg-yellow-400/15 hover:border-yellow-400/80 hover:text-yellow-300 text-sm py-2 h-8 transition-all duration-200"
         >
           清除地點選擇
         </Button>

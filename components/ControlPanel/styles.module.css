@@ -1,13 +1,13 @@
 .panel {
-  @apply h-screen bg-black/95 p-6 shadow-lg transition-all duration-300 ease-in-out backdrop-blur-sm border-l border-yellow-400/30;
+  @apply h-screen bg-gray-800/95 p-6 shadow-lg transition-all duration-300 ease-in-out backdrop-blur-md border-l border-yellow-400/50;
 }
 
 .mobilePanel {
-  @apply fixed top-0 right-0 z-50 rounded-l-2xl overflow-hidden;
+  @apply fixed top-0 right-0 z-[150] rounded-l-2xl overflow-hidden;
 }
 
 .desktopPanel {
-  @apply border-l border-gray-600 fixed right-0 z-50;
+  @apply border-l border-yellow-400/50 fixed right-0 z-[150];
   top: 4rem; /* 配合頁面標題高度 */
   height: calc(100vh - 4rem);
 }
@@ -21,25 +21,26 @@
 }
 
 .overlay {
-  @apply fixed inset-0 bg-black/30 backdrop-blur-sm z-40;
+  @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-[140];
 }
 
 .desktopBackgroundBlur {
-  @apply fixed inset-0 bg-black/20 backdrop-blur-sm z-30;
-  backdrop-filter: blur(4px);
+  @apply fixed inset-0 bg-black/30 backdrop-blur-md z-[130];
+  backdrop-filter: blur(6px);
   transition: all 0.3s ease-in-out;
 }
 
 .header {
-  @apply flex items-center justify-between mb-6;
+  @apply flex items-center justify-between mb-6 pb-4 border-b border-yellow-400/30;
 }
 
 .title {
-  @apply text-lg font-semibold text-yellow-400;
+  @apply text-xl font-bold text-yellow-400 tracking-wide;
 }
 
 .closeButton {
-  @apply hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/30 rounded-lg;
+  @apply hover:bg-yellow-400/20 text-yellow-400 border border-yellow-400/40 rounded-lg;
+  @apply transition-all duration-200 hover:border-yellow-400/60 hover:shadow-lg hover:shadow-yellow-400/20;
 }
 
 .closeIcon {
@@ -48,6 +49,26 @@
 
 .content {
   @apply overflow-y-auto h-[calc(100vh-8rem)];
+  /* 自定義滾動條樣式 */
+  scrollbar-width: thin;
+  scrollbar-color: #fbbf24 #374151;
+}
+
+.content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+  @apply bg-gray-700 rounded-full;
+}
+
+.content::-webkit-scrollbar-thumb {
+  @apply bg-yellow-400/60 rounded-full;
+  border: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  @apply bg-yellow-400/80;
 }
 
 /* Mobile specific styles */
@@ -60,5 +81,9 @@
     @apply relative border-l-0;
     top: 0;
     height: 100vh;
+  }
+  
+  .title {
+    @apply text-lg;
   }
 } 

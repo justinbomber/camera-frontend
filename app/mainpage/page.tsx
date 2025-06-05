@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { Plus, Trash2, Menu, Square, Grid2X2, Grid3X3, LayoutGrid, User, LogOut, ChevronDown, MapPin, Camera } from "lucide-react"
+import { Plus, Trash2, Menu, Square, Grid2X2, Grid3X3, LayoutGrid, User, LogOut, ChevronDown, MapPin, Camera, Settings, Monitor } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import StreamGrid from "@/components/StreamGrid"
 import ControlPanel from "@/components/ControlPanel"
@@ -18,6 +18,7 @@ import { AuthService } from "@/lib/authService"
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 import LocationSelector, { locations } from "@/components/ControlPanel/LocationSelector"
 import CameraSelector from "@/components/ControlPanel/CameraSelector"
+import PhoneSidebar from "@/components/PhoneSidebar"
 
 // Default streams to load on initial page load
 const STREAM_ENDPOINT = process.env.NEXT_PUBLIC_STREAM_ENDPOINT || "http://streamcamkeelong.mooo.com"
@@ -65,8 +66,7 @@ export default function MonitoringDashboard() {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
   // 新增：手機端攝影機切換索引
   const [currentMobileStreamIndex, setCurrentMobileStreamIndex] = useState<number>(0)
-  // 新增：用戶下拉選單狀態
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+
   // 使用安全的 localStorage hook 避免 hydration 錯誤
   const [sidebarMode, setSidebarMode] = useLocalStorage<SidebarMode>('sidebar-mode', 'expanded')
   // 新增：參數選擇狀態
@@ -80,6 +80,72 @@ export default function MonitoringDashboard() {
   // 新增：獲取當前用戶信息
   const currentUser = AuthService.getCurrentUser()
   
+  // 新增：手機端 sidebar 狀態
+  const [isPhoneSidebarOpen, setIsPhoneSidebarOpen] = useState(false)
+  
+  // 新增：自動初始化功能（從其他頁面切回時）
+  useEffect(() => {
+    // 檢查是否需要自動初始化
+    if (typeof window !== 'undefined') {
+      const isInitialized = sessionStorage.getItem('mainpage-initialized')
+      
+      // 如果還沒初始化過，且沒有選擇地點
+      if (!isInitialized && !selectedLocation) {
+        // 自動選擇第一個地點（基隆）
+        const firstLocation = locations[0]
+        if (firstLocation) {
+          setSelectedLocation(firstLocation.id)
+          
+          if (isMobile) {
+            // 手機端：選擇第一支相機
+            const firstCamera = firstLocation.cameras[0]
+            setSelectedCameras([firstCamera])
+            
+            const streamUrl = `${ACTUAL_ENDPOINT}/camera${firstCamera.toString().padStart(3, '0')}`
+            setStreamingCameras({ [firstCamera]: streamUrl })
+            setStreams([streamUrl])
+            setCameraVisibility({ 0: true })
+            setCurrentMobileStreamIndex(0)
+          } else {
+            // 電腦端：全選八隻監視器
+            const allCameras = firstLocation.cameras.slice(0, 8) // 取前8隻
+            setSelectedCameras(allCameras)
+            
+            // 建立攝影機ID到stream URL的映射
+            const newStreamingCameras: { [key: number]: string } = {}
+            allCameras.forEach(cameraId => {
+              newStreamingCameras[cameraId] = `${ACTUAL_ENDPOINT}/camera${cameraId.toString().padStart(3, '0')}`
+            })
+            setStreamingCameras(newStreamingCameras)
+            
+            // 設定所有的串流
+            const newStreams = Array(gridLayout).fill(null)
+            allCameras.forEach((cameraId, index) => {
+              if (index < gridLayout) {
+                newStreams[index] = newStreamingCameras[cameraId]
+              }
+            })
+            setStreams(newStreams)
+            
+            // 設定攝影機可見性
+            const newVisibility: { [key: number]: boolean } = {}
+            allCameras.forEach((_, index) => {
+              if (index < gridLayout) {
+                newVisibility[index] = true
+              }
+            })
+            setCameraVisibility(newVisibility)
+          }
+          
+          // 標記為已初始化
+          sessionStorage.setItem('mainpage-initialized', 'true')
+        }
+      }
+    }
+  }, [selectedLocation, isMobile, gridLayout])
+
+
+
   // 新增：處理登出
   const handleLogout = async () => {
     try {
@@ -179,59 +245,33 @@ export default function MonitoringDashboard() {
     return locationData ? locationData.name : ''
   }
 
-  // 新增：點擊外部關閉用戶選單
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isUserMenuOpen && !(event.target as Element).closest('.user-menu')) {
-        setIsUserMenuOpen(false)
-      }
-    }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isUserMenuOpen])
 
   // Load default streams on initial page load
   useEffect(() => {
     const loadInitialStreams = async () => {
       // 檢查 sessionStorage（但要安全地處理）
       let hasLoaded = false
-      try {
-        if (typeof window !== 'undefined') {
-          hasLoaded = sessionStorage.getItem('camera-loaded') === 'true'
-        }
-      } catch (error) {
-        console.warn('無法讀取 sessionStorage:', error)
-      }
-
-      // 如果已經載入過，直接設置狀態而不顯示載入動畫
-      if (!isInitialLoading || hasLoaded) {
-        if (isInitialLoading) {
-          setIsInitialLoading(false)
-        }
-        return
+      if (typeof window !== 'undefined') {
+        hasLoaded = sessionStorage.getItem('camera-loaded') === 'true'
       }
       
-      // 模擬載入時間，讓使用者看到統一的loading畫面
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      setIsInitialLoading(false)
-      // 手機端初始不自動選擇地點，讓用戶手動選擇
-      if (!isMobile) {
-        // 只有桌面端才預設選擇第一個地點
-        setSelectedLocation('location1')
-      }
-      
-      // 標記為已載入，下次訪問時不再顯示載入動畫
-      try {
+      if (!hasLoaded) {
+        // 首次載入，顯示動畫
+        setIsInitialLoading(true)
+        
+        // 模擬載入時間
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        
+        // 標記為已載入（這個會話期間有效）
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('camera-loaded', 'true')
+          // 同時標記 mainpage 為已初始化，避免重複初始化
+          sessionStorage.setItem('mainpage-initialized', 'true')
         }
-      } catch (error) {
-        console.warn('無法寫入 sessionStorage:', error)
       }
+      
+      setIsInitialLoading(false)
     }
     
     loadInitialStreams()
@@ -436,7 +476,7 @@ export default function MonitoringDashboard() {
             </div>
 
             {/* 分隔線 */}
-            <div className="border-t border-yellow-400/30"></div>
+            <div className="border-t border-yellow-400/40"></div>
 
             {/* 攝影機列表區域 */}
             <div className="space-y-3">
@@ -519,11 +559,11 @@ export default function MonitoringDashboard() {
 
         {/* 控制面板 */}
         <ControlPanel isOpen={isPanelOpen} setIsOpen={setIsPanelOpen} isMobile={false}>
-          <div className="p-4 space-y-4">
+          <div className="space-y-6">
             {/* 地點選擇 */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-yellow-400 font-medium text-sm">
-                <MapPin className="h-4 w-4" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-yellow-400 font-medium">
+                <MapPin className="h-5 w-5" />
                 <span>選擇監控地點</span>
               </div>
               <LocationSelector
@@ -536,9 +576,9 @@ export default function MonitoringDashboard() {
             <div className="border-t border-gray-600/50"></div>
 
             {/* 攝影機選擇 */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-yellow-400 font-medium text-sm">
-                <Camera className="h-4 w-4" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-yellow-400 font-medium">
+                <Camera className="h-5 w-5" />
                 <span>選擇攝影機 (根據宮格限制)</span>
               </div>
               <CameraSelector
@@ -550,8 +590,6 @@ export default function MonitoringDashboard() {
                 gridLayout={gridLayout}
               />
             </div>
-
-
           </div>
         </ControlPanel>
       </div>
@@ -571,10 +609,27 @@ export default function MonitoringDashboard() {
       {/* 主內容區域 */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* 頁面標題區域 */}
-        <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-[100000]">
-          <h1 className="text-xl font-bold text-white">
-            monitor.hub {isMobile && <span className="text-sm text-gray-300 ml-2"></span>}
-          </h1>
+        <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-10">
+          <div className="flex items-center gap-3">
+            {/* 手機端頭像按鈕 - 只在手機端顯示 */}
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsPhoneSidebarOpen(true)}
+                className="hover:bg-gray-700/80 text-white rounded-full w-10 h-10 p-0"
+              >
+                <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-full shadow-lg border border-gray-600">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+              </Button>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <Monitor className="h-5 w-5 text-yellow-400" />
+              <span className="text-xl font-bold text-white">即時影像</span>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {/* 宮格切換按鈕 - 只在桌面設備顯示 */}
             {!isMobile && (
@@ -614,45 +669,6 @@ export default function MonitoringDashboard() {
               </>
             )}
             
-            {/* 用戶頭像和下拉選單 */}
-            <div className="relative user-menu">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2 hover:bg-gray-700/80 text-white px-3 py-2"
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              >
-                <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-lg">
-                  <User className="h-4 w-4 text-gray-900" />
-                </div>
-                <span className="hidden sm:block text-sm font-medium">
-                  {currentUser?.email?.split('@')[0] || '用戶'}
-                </span>
-                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-              </Button>
-              
-              {/* 下拉選單 - 提高z-index */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 rounded-lg shadow-lg border border-gray-600 py-2 z-[999999] shadow-2xl">
-                  <div className="px-4 py-2 border-b border-gray-600">
-                    <p className="text-sm font-medium text-white">
-                      {currentUser?.email || 'user@example.com'}
-                    </p>
-                    <p className="text-xs text-gray-300">
-                      已登入
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    登出
-                  </button>
-                </div>
-              )}
-            </div>
-            
             {/* 菜單按鈕 */}
             <Button
               variant="ghost"
@@ -675,6 +691,14 @@ export default function MonitoringDashboard() {
           onClose={() => setIsAddDialogOpen(false)} 
           onAdd={addStream} 
         />
+        
+        {/* 手機端 Sidebar */}
+        {isMobile && (
+          <PhoneSidebar 
+            isOpen={isPhoneSidebarOpen} 
+            onClose={() => setIsPhoneSidebarOpen(false)} 
+          />
+        )}
       </div>
     </div>
   );

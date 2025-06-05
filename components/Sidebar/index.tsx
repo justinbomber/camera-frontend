@@ -10,7 +10,7 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  Menu
+  PanelLeft
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -76,7 +76,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mode, onModeChange, className = '' })
   
   // 處理導航
   const handleNavigation = (item: SidebarItem) => {
+    // 如果是導航到 mainpage，清除相關的 sessionStorage 來觸發重新初始化
     if (item.path === '/mainpage') {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('mainpage-initialized')
+      }
       // 如果是即時影像，直接跳轉到 mainpage
       router.push('/mainpage')
     } else {
@@ -147,7 +151,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mode, onModeChange, className = '' })
                 }`}
                 onClick={() => setShowModeSelector(!showModeSelector)}
               >
-                <Menu className="h-5 w-5 flex-shrink-0" />
+                <PanelLeft className="h-5 w-5 flex-shrink-0" />
                 <AnimatePresence>
                   {shouldExpand && (
                     <motion.span
