@@ -278,6 +278,24 @@ export default function MobileStreamPlayer({
 
   return (
     <div className={styles.container}>
+      {/* 攝影機資訊和連線狀態 - 移到影片容器外部 */}
+      <div className={styles.infoBar}>
+        <div className={styles.cameraInfoExternal}>
+          <span className={styles.cameraNameExternal}>
+            {getCameraName(currentStreamIndex)}
+          </span>
+        </div>
+        
+        <div className={styles.statusIndicatorExternal}>
+          {getConnectionIcon()}
+          <span className={styles.statusTextExternal}>
+            {isReconnecting ? '重連中' :
+             connectionStatus === 'connected' ? '已連線' : 
+             connectionStatus === 'error' ? '錯誤' : '離線'}
+          </span>
+        </div>
+      </div>
+
       {/* 主播放區域 */}
       <Card className={styles.playerCard}>
         <CardContent className={styles.playerContent}>
@@ -337,23 +355,6 @@ export default function MobileStreamPlayer({
               console.log('手機端視頻等待資料')
             }}
           />
-
-          {/* 連線狀態指示器 */}
-          <div className={styles.statusIndicator}>
-            {getConnectionIcon()}
-            <span className={styles.statusText}>
-              {isReconnecting ? '重連中' :
-               connectionStatus === 'connected' ? '已連線' : 
-               connectionStatus === 'error' ? '錯誤' : '離線'}
-            </span>
-          </div>
-
-          {/* 攝影機資訊 */}
-          <div className={styles.cameraInfo}>
-            <span className={styles.cameraName}>
-              {getCameraName(currentStreamIndex)}
-            </span>
-          </div>
 
           {/* Loading 動畫 */}
           {isLoading && (

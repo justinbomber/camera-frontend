@@ -542,7 +542,7 @@ export default function MonitoringDashboard() {
         {/* 頁面標題區域 */}
         <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-[100000]">
           <h1 className="text-xl font-bold text-white">
-            monitor.hub {isMobile && <span className="text-sm text-gray-300 ml-2">(手機版)</span>}
+            monitor.hub {isMobile && <span className="text-sm text-gray-300 ml-2"></span>}
           </h1>
           <div className="flex items-center gap-2">
             {/* 宮格切換按鈕 - 只在桌面設備顯示 */}

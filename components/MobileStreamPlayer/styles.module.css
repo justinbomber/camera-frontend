@@ -4,6 +4,31 @@
   min-height: 100vh;
 }
 
+/* 外部資訊欄 */
+.infoBar {
+  @apply flex items-center justify-between w-full mb-2;
+}
+
+.cameraInfoExternal {
+  @apply flex items-center;
+  @apply bg-gray-800/90 backdrop-blur-sm rounded-lg px-3 py-2;
+  @apply border border-gray-600;
+}
+
+.cameraNameExternal {
+  @apply text-sm text-white font-medium;
+}
+
+.statusIndicatorExternal {
+  @apply flex items-center gap-2;
+  @apply bg-gray-800/90 backdrop-blur-sm rounded-lg px-3 py-2;
+  @apply border border-gray-600;
+}
+
+.statusTextExternal {
+  @apply text-xs text-white font-medium;
+}
+
 /* 播放器卡片 */
 .playerCard {
   @apply relative overflow-hidden;
@@ -12,9 +37,9 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  /* 保持16:9比例，但允許內容決定實際高度 */
-  min-height: 40vh;
-  max-height: 60vh;
+  /* 使用固定的寬高比，確保影片區域正確 */
+  aspect-ratio: 16/9;
+  width: 100%;
 }
 
 .playerContent {
@@ -30,33 +55,30 @@
   transition: filter 0.3s ease;
 }
 
-/* 狀態指示器 */
+/* 舊的狀態指示器和攝影機資訊樣式 - 已移到外部資訊欄，保留用於備用 */
+/*
 .statusIndicator {
   @apply absolute z-10 flex items-center gap-2;
   @apply bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2;
-  /* 向上移動到更高位置，減少對串流畫面的遮擋 */
-  top: -12px;
+  top: 8px;
   right: 8px;
-  transform: translateY(-50%);
 }
 
 .statusText {
   @apply text-xs text-white font-medium;
 }
 
-/* 攝影機資訊 */
 .cameraInfo {
   @apply absolute z-10;
   @apply bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2;
-  /* 向上移動到更高位置，減少對串流畫面的遮擋 */
-  top: -12px;
+  top: 8px;
   left: 8px;
-  transform: translateY(-50%);
 }
 
 .cameraName {
   @apply text-sm text-white font-medium;
 }
+*/
 
 /* Loading 覆蓋層 */
 .loadingOverlay {
@@ -306,18 +328,22 @@
     @apply p-3;
   }
   
-  .cameraInfo,
-  .statusIndicator {
-    /* 橫屏時保持在上方位置 */
-    top: -8px;
+  /* 橫屏時外部資訊欄使用更小的間距 */
+  .infoBar {
+    @apply mb-1;
   }
   
-  .cameraInfo {
-    left: 8px;
+  .cameraInfoExternal,
+  .statusIndicatorExternal {
+    @apply px-2 py-1;
   }
   
-  .statusIndicator {
-    right: 8px;
+  .cameraNameExternal {
+    @apply text-xs;
+  }
+  
+  .statusTextExternal {
+    @apply text-xs;
   }
   
   /* 橫屏時進一步限制列表高度 */
