@@ -1,5 +1,6 @@
 .container {
-  @apply aspect-video w-full h-full overflow-hidden relative;
+  @apply aspect-video w-full overflow-hidden relative;
+  height: 100%;
 }
 
 .content {

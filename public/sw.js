@@ -1,8 +1,8 @@
-const CACHE_NAME = 'camera-frontend-v1';
+const CACHE_NAME = 'camera-frontend-v2';
 const STATIC_ASSETS = [
   '/',
   '/mainpage',
-  '/h265-demo',
+  '/login',
   '/favicon.ico',
   '/manifest.json',
 ];

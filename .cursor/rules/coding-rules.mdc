@@ -12,9 +12,9 @@ alwaysApply: true
 以下章節以與「UI 設計主要原則」相同的風格呈現，並進一步延伸，使開發流程與使用者體驗（UX）達到最佳化。在本專案中，我們採用 Next.js（基於 React）作為核心框架，且「使用者體驗」為最高優先。
 
 ## 主要原則（！必須follow！）
-- 要做ui都必須使用canvas的動畫套件作爲主要的設計工具，ui的互動一定要有動畫，如buttun滑鼠移動到會變顔色，control panel會滑動出來等細節
+- 要做ui都必須使用canvas的動畫套件作爲主要的設計工具，ui的互動一定要有動畫，如button滑鼠移動到會變顔色，control panel會滑動出來等細節
 
-當程式修改完成後直接使用playwright 的mcp tools，訪問http://localhost:3001，用playwright的互動來測試網頁是否正確運行
+當程式修改完成後直接使用playwright 的mcp tools，訪問http://localhost:3000，用playwright的互動來測試網頁是否正確運行
 
 # monitor.hub 專案開發規則與進度
 
@@ -150,6 +150,7 @@ alwaysApply: true
    - **開發命令優化**: 
      - `npm run dev` - 使用遠端伺服器 (http://streamcamkeelong.mooo.com)
      - `npm run dev:local` - 使用本地伺服器 (http://localhost:8888)
+     - `npm run dev:proxy` - 使用代理模式訪問遠端伺服器，解決本地開發 CORS 問題
    - **環境變數支援**: 使用 NEXT_PUBLIC_STREAM_ENDPOINT 環境變數控制端點
    - **向後相容**: 預設使用遠端端點，確保現有功能不受影響
    - **調試功能**: 添加console.log顯示當前使用的端點
@@ -171,6 +172,24 @@ alwaysApply: true
    - **統一行為**: 確保所有設備在認證流程上的行為完全一致
    - **改善 UX**: 優化跳轉邏輯，避免用戶透過返回按鈕回到不當的頁面
    - **維護性提升**: 統一認證邏輯便於未來維護和擴展
+
+12. ✅ **本地開發代理配置 (2025-01-27)**:
+   - **問題識別**: 在 localhost 開發環境測試外部串流 URL 時遇到 CORS 跨域問題
+   - **解決方案**: 使用 Next.js rewrites 功能建立本地代理
+   - **實作內容**:
+     - ✅ 在 `next.config.js` 中添加 `/api/proxy/stream/:path*` 代理規則
+     - ✅ 自動代理所有外部串流請求到目標伺服器
+     - ✅ 在開發模式下自動檢測並使用代理（當目標是外部伺服器時）
+     - ✅ 添加 `npm run dev:proxy` 腳本專門用於代理模式開發
+   - **智能切換邏輯**:
+     - 開發環境 + 外部伺服器 = 自動使用代理
+     - 開發環境 + 本地伺服器 = 直接連接
+     - 生產環境 = 總是直接連接
+   - **優勢**:
+     - 解決 localhost 測試外部 API 的 CORS 問題
+     - 保持開發體驗流暢，無需手動配置瀏覽器
+     - 自動化切換，開發者無感知
+     - 支援所有類型的串流請求（HLS、H.265 等）
 
 9. ✅ **手機端登入API連線修復 (2025-01-27)**:
    - **問題識別**: 手機端登入時出現"load failed"錯誤，無法跳轉到mainpage

@@ -8,7 +8,7 @@
 .content {
   @apply flex-1 p-1 w-full max-w-full;
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
   display: flex;
   flex-direction: column;
 }
@@ -20,28 +20,46 @@
 .grid {
   display: grid;
   @apply w-full gap-1 max-w-full;
-  height: 100%;
   overflow: hidden;
+  height: fit-content;
+  max-height: 100%;
 }
 
 .grid1x1 {
   @apply grid-cols-1;
-  grid-template-rows: 1fr;
+  grid-template-rows: minmax(0, calc((100vw - 240px - 2rem) * 9 / 16));
 }
 
 .grid2x2 {
   @apply grid-cols-2;
-  grid-template-rows: 1fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, calc((100vw - 240px - 3rem) / 2 * 9 / 16)));
 }
 
 .grid3x3 {
   @apply grid-cols-3;
-  grid-template-rows: 1fr 1fr 1fr;
+  grid-template-rows: repeat(3, minmax(0, calc((100vw - 240px - 4rem) / 3 * 9 / 16)));
 }
 
 .grid4x4 {
   @apply grid-cols-4;
-  grid-template-rows: 1fr 1fr 1fr 1fr;
+  grid-template-rows: repeat(4, minmax(0, calc((100vw - 240px - 5rem) / 4 * 9 / 16)));
+}
+
+/* Sidebar 收縮狀態的樣式 - 使用 CSS 變數來支援動態計算 */
+:global(.sidebar-collapsed) .grid1x1 {
+  grid-template-rows: minmax(0, calc((100vw - 64px - 2rem) * 9 / 16));
+}
+
+:global(.sidebar-collapsed) .grid2x2 {
+  grid-template-rows: repeat(2, minmax(0, calc((100vw - 64px - 3rem) / 2 * 9 / 16)));
+}
+
+:global(.sidebar-collapsed) .grid3x3 {
+  grid-template-rows: repeat(3, minmax(0, calc((100vw - 64px - 4rem) / 3 * 9 / 16)));
+}
+
+:global(.sidebar-collapsed) .grid4x4 {
+  grid-template-rows: repeat(4, minmax(0, calc((100vw - 64px - 5rem) / 4 * 9 / 16)));
 }
 
 /* 手機端垂直布局 */

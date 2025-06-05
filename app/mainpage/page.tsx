@@ -20,18 +20,28 @@ import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 // Default streams to load on initial page load
 const STREAM_ENDPOINT = process.env.NEXT_PUBLIC_STREAM_ENDPOINT || "http://streamcamkeelong.mooo.com"
 
+// 檢測是否在開發環境且需要使用代理
+const isDev = process.env.NODE_ENV === 'development'
+const isExternal = STREAM_ENDPOINT.includes('streamcamkeelong.mooo.com')
+const useProxy = isDev && isExternal
+
+// 決定實際使用的端點
+const ACTUAL_ENDPOINT = useProxy ? '/api/proxy/stream' : STREAM_ENDPOINT
+
 // 調試用：顯示當前使用的端點
-console.log('當前串流端點:', STREAM_ENDPOINT)
+console.log('原始串流端點:', STREAM_ENDPOINT)
+console.log('實際使用端點:', ACTUAL_ENDPOINT)
+console.log('是否使用代理:', useProxy)
 
 const DEFAULT_STREAMS = [
-  `${STREAM_ENDPOINT}/camera001`,
-  `${STREAM_ENDPOINT}/camera002`,
-  `${STREAM_ENDPOINT}/camera003`,
-  `${STREAM_ENDPOINT}/camera004`,
-  `${STREAM_ENDPOINT}/camera005`,
-  `${STREAM_ENDPOINT}/camera006`,
-  `${STREAM_ENDPOINT}/camera007`,
-  `${STREAM_ENDPOINT}/camera008`
+  `${ACTUAL_ENDPOINT}/camera001`,
+  `${ACTUAL_ENDPOINT}/camera002`,
+  `${ACTUAL_ENDPOINT}/camera003`,
+  `${ACTUAL_ENDPOINT}/camera004`,
+  `${ACTUAL_ENDPOINT}/camera005`,
+  `${ACTUAL_ENDPOINT}/camera006`,
+  `${ACTUAL_ENDPOINT}/camera007`,
+  `${ACTUAL_ENDPOINT}/camera008`
 ]
 
 export default function MonitoringDashboard() {
@@ -516,6 +526,9 @@ export default function MonitoringDashboard() {
       </div>
     )
   }
+  
+  // 判斷是否應該使用收縮狀態的CSS
+  const isSidebarCollapsed = sidebarMode === 'collapsed' || sidebarMode === 'hover'
   
   const content = (
     <div className="flex h-screen bg-gradient-to-br from-gray-700 via-gray-800 to-black overflow-hidden">

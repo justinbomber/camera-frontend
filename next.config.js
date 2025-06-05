@@ -48,6 +48,15 @@ const nextConfig = {
       },
     ]
   },
+  // 添加代理配置，解決開發環境的CORS問題
+  async rewrites() {
+    return [
+      {
+        source: '/api/proxy/stream/:path*',
+        destination: `${process.env.NEXT_PUBLIC_STREAM_ENDPOINT || 'http://streamcamkeelong.mooo.com'}/:path*`,
+      },
+    ]
+  },
   // 移除錯誤的重定向配置，讓Next.js正常處理路由
   // 不需要手動重定向，讓 app/page.tsx 處理根路由邏輯
   // 啟用獨立輸出模式，這是Docker部署所需要的
