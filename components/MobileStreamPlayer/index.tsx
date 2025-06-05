@@ -265,13 +265,45 @@ export default function MobileStreamPlayer({
 
   if (streams.length === 0) {
     return (
-      <div className={styles.container}>
-        <Card className={styles.emptyCard}>
-          <CardContent className={styles.emptyContent}>
-            <Video className={styles.emptyIcon} />
-            <span className={styles.emptyText}>無可用串流</span>
-          </CardContent>
-        </Card>
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-800 p-6">
+        <div className="text-center space-y-6 max-w-md mx-auto">
+          {/* 動畫圖標 */}
+          <div className="relative">
+            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full flex items-center justify-center shadow-2xl">
+              <Video className="w-12 h-12 text-black animate-pulse" />
+            </div>
+            {/* 圓環動畫 */}
+            <div className="absolute inset-0 w-24 h-24 mx-auto border-4 border-yellow-400/30 rounded-full animate-spin"></div>
+          </div>
+          
+          {/* 主標題 */}
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-yellow-400">
+              monitor.hub
+            </h2>
+            <p className="text-lg text-white font-medium">
+              歡迎使用監控系統
+            </p>
+          </div>
+          
+          {/* 說明文字 */}
+          <div className="space-y-3 text-gray-300">
+            <p className="text-sm">
+              請使用右上角的選單按鈕
+            </p>
+            <p className="text-sm">
+              選擇監控地點來開始查看攝影機畫面
+            </p>
+          </div>
+          
+          {/* 操作提示 */}
+          <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 text-yellow-400 text-sm font-medium">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span>點擊選單 → 選擇地點 → 開始監控</span>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

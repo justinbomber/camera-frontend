@@ -14,7 +14,6 @@ alwaysApply: true
 ## 主要原則（！必須follow！）
 - 要做ui都必須使用canvas的動畫套件作爲主要的設計工具，ui的互動一定要有動畫，如button滑鼠移動到會變顔色，control panel會滑動出來等細節
 
-當程式修改完成後直接使用playwright 的mcp tools，訪問http://localhost:3000，用playwright的互動來測試網頁是否正確運行
 
 # monitor.hub 專案開發規則與進度
 

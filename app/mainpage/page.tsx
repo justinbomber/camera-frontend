@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { Plus, Trash2, Menu, Square, Grid2X2, Grid3X3, LayoutGrid, User, LogOut, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Menu, Square, Grid2X2, Grid3X3, LayoutGrid, User, LogOut, ChevronDown, MapPin, Camera } from "lucide-react"
 import { useRouter } from 'next/navigation'
 import StreamGrid from "@/components/StreamGrid"
 import ControlPanel from "@/components/ControlPanel"
@@ -16,6 +16,8 @@ import { Grid4x4Icon } from "@/components/ui/grid4x4-icon"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 import { AuthService } from "@/lib/authService"
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
+import LocationSelector, { locations } from "@/components/ControlPanel/LocationSelector"
+import CameraSelector from "@/components/ControlPanel/CameraSelector"
 
 // Default streams to load on initial page load
 const STREAM_ENDPOINT = process.env.NEXT_PUBLIC_STREAM_ENDPOINT || "http://streamcamkeelong.mooo.com"
@@ -67,6 +69,10 @@ export default function MonitoringDashboard() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   // 使用安全的 localStorage hook 避免 hydration 錯誤
   const [sidebarMode, setSidebarMode] = useLocalStorage<SidebarMode>('sidebar-mode', 'expanded')
+  // 新增：參數選擇狀態
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
+  const [selectedCameras, setSelectedCameras] = useState<number[]>([])
+  const [streamingCameras, setStreamingCameras] = useState<{ [key: number]: string }>({}) // 將攝影機ID映射到stream URL
   
   // 使用新的設備檢測 Hook
   const isMobile = useDeviceDetection()
@@ -82,6 +88,95 @@ export default function MonitoringDashboard() {
     } catch (error) {
       console.error('登出失敗:', error)
     }
+  }
+
+  // 新增：處理地點選擇變更
+  const handleLocationChange = (location: string | null) => {
+    setSelectedLocation(location)
+    setSelectedCameras([]) // 清空攝影機選擇
+    
+    if (location) {
+      // 自動選擇地點時，預設選擇所有八隻攝影機
+      const locationData = locations.find(loc => loc.id === location)
+      if (locationData) {
+        const allCameras = locationData.cameras // 選擇全部8隻攝影機
+        setSelectedCameras(allCameras)
+        
+        // 建立攝影機ID到stream URL的映射
+        const newStreamingCameras: { [key: number]: string } = {}
+        allCameras.forEach((cameraId, index) => {
+          newStreamingCameras[cameraId] = `${ACTUAL_ENDPOINT}/camera${cameraId.toString().padStart(3, '0')}`
+        })
+        setStreamingCameras(newStreamingCameras)
+        
+        // 更新主要的 streams 狀態（根據當前宮格限制顯示）
+        const newStreams = Array(gridLayout).fill(null)
+        allCameras.forEach((cameraId, index) => {
+          if (index < gridLayout) {
+            newStreams[index] = newStreamingCameras[cameraId]
+          }
+        })
+        setStreams(newStreams)
+        
+        // 更新攝影機可見性（根據當前宮格限制）
+        const newVisibility: { [key: number]: boolean } = {}
+        allCameras.forEach((_, index) => {
+          if (index < gridLayout) {
+            newVisibility[index] = true
+          }
+        })
+        setCameraVisibility(newVisibility)
+      }
+    } else {
+      // 清空所有選擇
+      setStreamingCameras({})
+      setStreams(Array(gridLayout).fill(null))
+      setCameraVisibility({})
+    }
+  }
+
+  // 新增：處理攝影機選擇變更
+  const handleCameraChange = (cameras: number[]) => {
+    setSelectedCameras(cameras)
+    
+    // 建立攝影機ID到stream URL的映射
+    const newStreamingCameras: { [key: number]: string } = {}
+    cameras.forEach(cameraId => {
+      newStreamingCameras[cameraId] = `${ACTUAL_ENDPOINT}/camera${cameraId.toString().padStart(3, '0')}`
+    })
+    setStreamingCameras(newStreamingCameras)
+    
+    // 更新主要的 streams 狀態
+    const newStreams = Array(gridLayout).fill(null)
+    cameras.forEach((cameraId, index) => {
+      if (index < gridLayout) {
+        newStreams[index] = newStreamingCameras[cameraId]
+      }
+    })
+    setStreams(newStreams)
+    
+    // 更新攝影機可見性
+    const newVisibility: { [key: number]: boolean } = {}
+    cameras.forEach((_, index) => {
+      newVisibility[index] = true
+    })
+    setCameraVisibility(newVisibility)
+  }
+
+  // 新增：獲取可用攝影機列表
+  const getAvailableCameras = (): number[] => {
+    if (!selectedLocation) return []
+    
+    const locationData = locations.find(loc => loc.id === selectedLocation)
+    return locationData ? locationData.cameras : []
+  }
+
+  // 新增：獲取地點名稱
+  const getLocationName = (): string => {
+    if (!selectedLocation) return ''
+    
+    const locationData = locations.find(loc => loc.id === selectedLocation)
+    return locationData ? locationData.name : ''
   }
 
   // 新增：點擊外部關閉用戶選單
@@ -111,18 +206,8 @@ export default function MonitoringDashboard() {
         console.warn('無法讀取 sessionStorage:', error)
       }
 
-      // 如果已經載入過，直接設置串流而不顯示載入動畫
+      // 如果已經載入過，直接設置狀態而不顯示載入動畫
       if (!isInitialLoading || hasLoaded) {
-        const initialStreams = [...streams]
-        const initialVisibility: { [key: number]: boolean } = {}
-        DEFAULT_STREAMS.forEach((stream, index) => {
-          if (index < initialStreams.length) {
-            initialStreams[index] = stream
-            initialVisibility[index] = true
-          }
-        })
-        setStreams(initialStreams)
-        setCameraVisibility(initialVisibility)
         if (isInitialLoading) {
           setIsInitialLoading(false)
         }
@@ -132,17 +217,12 @@ export default function MonitoringDashboard() {
       // 模擬載入時間，讓使用者看到統一的loading畫面
       await new Promise(resolve => setTimeout(resolve, 1500))
       
-      const initialStreams = [...streams]
-      const initialVisibility: { [key: number]: boolean } = {}
-      DEFAULT_STREAMS.forEach((stream, index) => {
-        if (index < initialStreams.length) {
-          initialStreams[index] = stream
-          initialVisibility[index] = true // 預設所有攝影機都顯示
-        }
-      })
-      setStreams(initialStreams)
-      setCameraVisibility(initialVisibility)
       setIsInitialLoading(false)
+      // 手機端初始不自動選擇地點，讓用戶手動選擇
+      if (!isMobile) {
+        // 只有桌面端才預設選擇第一個地點
+        setSelectedLocation('location1')
+      }
       
       // 標記為已載入，下次訪問時不再顯示載入動畫
       try {
@@ -155,7 +235,42 @@ export default function MonitoringDashboard() {
     }
     
     loadInitialStreams()
-  }, [])
+  }, [isMobile])
+
+  // 監聽 gridLayout 變更，自動調整攝影機顯示
+  useEffect(() => {
+    if (selectedLocation && selectedCameras.length > 0) {
+      // 重新生成 streams 以適應新的宮格布局（不改變選中的攝影機數量）
+      const newStreams = Array(gridLayout).fill(null)
+      selectedCameras.forEach((cameraId, index) => {
+        if (index < gridLayout && streamingCameras[cameraId]) {
+          newStreams[index] = streamingCameras[cameraId]
+        }
+      })
+      setStreams(newStreams)
+      
+      // 更新攝影機可見性（只顯示在當前宮格範圍內的）
+      const newVisibility: { [key: number]: boolean } = {}
+      selectedCameras.forEach((_, index) => {
+        if (index < gridLayout) {
+          newVisibility[index] = true
+        }
+      })
+      setCameraVisibility(newVisibility)
+    }
+  }, [gridLayout])
+
+  // 監聽初始地點選擇，觸發攝影機選擇
+  useEffect(() => {
+    if (selectedLocation && selectedCameras.length === 0) {
+      // 當地點被選擇但還沒有攝影機選擇時，自動選擇所有攝影機
+      const locationData = locations.find(loc => loc.id === selectedLocation)
+      if (locationData) {
+        const allCameras = locationData.cameras
+        handleCameraChange(allCameras)
+      }
+    }
+  }, [selectedLocation])
 
   // 如果還在初始載入中，顯示統一的Loading畫面
   if (isInitialLoading) {
@@ -307,43 +422,28 @@ export default function MonitoringDashboard() {
 
         {/* 手機端控制面板（覆蓋模式） */}
         <ControlPanel isOpen={isPanelOpen} setIsOpen={setIsPanelOpen} isMobile={true}>
-          <div className="space-y-4">
-            <Button onClick={() => setIsAddDialogOpen(true)} className="w-full" variant="default">
-              <Plus className="mr-2 h-4 w-4 text-white" /> 
-              <span className="text-white">新增串流</span>
-            </Button>
+          <div className="space-y-6">
+            {/* 地點選擇區域 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-yellow-400 font-semibold text-sm">
+                <MapPin className="h-4 w-4" />
+                <span>選擇監控地點</span>
+              </div>
+              <LocationSelector
+                selectedLocation={selectedLocation}
+                onLocationChange={handleLocationChange}
+              />
+            </div>
 
-            {!isRemoveMode ? (
-              <Button
-                onClick={() => setIsRemoveMode(true)}
-                className="w-full bg-red-600 hover:bg-red-700 text-white border-red-600"
-              >
-                <Trash2 className="mr-2 h-4 w-4 text-white" />
-                <span className="text-white">移除串流</span>
-              </Button>
-            ) : (
-              <>
-                <div className="flex space-x-2">
-                  <Button onClick={cancelRemoveMode} className="flex-1" variant="outline">
-                    <span className="text-black">取消</span>
-                  </Button>
-                  <Button
-                    onClick={removeSelectedStreams}
-                    className="flex-1"
-                    variant="destructive"
-                    disabled={selectedForRemoval.length === 0}
-                  >
-                    <span className="text-white">刪除 {selectedForRemoval.length > 0 ? `(${selectedForRemoval.length})` : ''}</span>
-                  </Button>
-                </div>
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
-                  選擇要移除的串流，然後點擊「刪除」按鈕進行移除
-                </div>
-              </>
-            )}
+            {/* 分隔線 */}
+            <div className="border-t border-yellow-400/30"></div>
 
-            <div className="border-t pt-4">
-              <h3 className="text-sm font-medium text-black mb-3">目前串流列表</h3>
+            {/* 攝影機列表區域 */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-yellow-400 mb-3 flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                攝影機列表
+              </h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {allStreams.length > 0 ? allStreams.map(({ stream, index, name }) => {
                   // 檢查這個攝影機是否正在播放
@@ -355,57 +455,35 @@ export default function MonitoringDashboard() {
                     <div 
                       key={index}
                       className={`flex items-center justify-between p-3 border rounded-lg text-sm cursor-pointer transition-all duration-200 ${
-                        selectedForRemoval.includes(index) 
-                          ? 'bg-red-50 border-red-200' 
-                          : isCurrentlyPlaying
-                            ? 'bg-green-50 border-green-300 shadow-sm'
-                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        isCurrentlyPlaying
+                          ? 'bg-yellow-400/20 border-yellow-400/50 shadow-sm'
+                          : 'bg-gray-800/50 border-gray-600 hover:bg-gray-700/70 hover:border-yellow-400/30'
                       }`}
                       onClick={() => {
-                        if (isRemoveMode) {
-                          toggleStreamSelection(index)
-                        } else {
-                          handleMobileCameraSwitch(index)
-                        }
+                        handleMobileCameraSwitch(index)
                       }}
                     >
                       <span className={`truncate flex-1 mr-2 font-medium ${
-                        isCurrentlyPlaying ? 'text-green-700' : 'text-black'
+                        isCurrentlyPlaying ? 'text-yellow-400' : 'text-white'
                       }`}>
                         {name}
                       </span>
                       
                       <div className="flex items-center gap-2">
-                        {/* 正在播放的綠色勾勾 */}
-                        {isCurrentlyPlaying && !isRemoveMode && (
-                          <div className="flex items-center justify-center w-5 h-5 bg-green-500 rounded-full">
-                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {/* 正在播放的黃色勾勾 */}
+                        {isCurrentlyPlaying && (
+                          <div className="flex items-center justify-center w-5 h-5 bg-yellow-400 rounded-full">
+                            <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
-                        )}
-                        
-                        {/* 移除模式的選擇按鈕 */}
-                        {isRemoveMode && (
-                          <Button
-                            size="sm"
-                            variant={selectedForRemoval.includes(index) ? "destructive" : "outline"}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleStreamSelection(index)
-                            }}
-                          >
-                            <span className={selectedForRemoval.includes(index) ? "text-white" : "text-black"}>
-                              {selectedForRemoval.includes(index) ? '已選' : '選擇'}
-                            </span>
-                          </Button>
                         )}
                       </div>
                     </div>
                   )
                 }) : (
-                  <div className="text-center text-gray-500 py-4">
-                    尚無串流
+                  <div className="text-center text-yellow-400/70 py-4 bg-gray-800/30 rounded-lg border border-gray-600">
+                    {selectedLocation ? '請等待攝影機載入...' : '請先選擇監控地點'}
                   </div>
                 )}
               </div>
@@ -441,86 +519,39 @@ export default function MonitoringDashboard() {
 
         {/* 控制面板 */}
         <ControlPanel isOpen={isPanelOpen} setIsOpen={setIsPanelOpen} isMobile={false}>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="w-full mb-2" variant="default">
-            <Plus className="mr-2 h-4 w-4 text-white" /> 
-            <span className="text-white">Add Stream</span>
-          </Button>
-
-          {!isRemoveMode ? (
-            <Button
-              onClick={() => setIsRemoveMode(true)}
-              className="w-full mb-4 bg-red-600 hover:bg-red-700 text-white border-red-600"
-            >
-              <Trash2 className="mr-2 h-4 w-4 text-white" />
-              <span className="text-white">Remove Streams</span>
-            </Button>
-          ) : (
-            <>
-              <div className="flex space-x-2 mb-2">
-                <Button onClick={cancelRemoveMode} className="flex-1" variant="outline">
-                  <span className="text-white">Cancel</span>
-                </Button>
-                <Button
-                  onClick={removeSelectedStreams}
-                  className="flex-1"
-                  variant="destructive"
-                  disabled={selectedForRemoval.length === 0}
-                >
-                  <span className="text-white">Delete {selectedForRemoval.length > 0 ? `(${selectedForRemoval.length})` : ''}</span>
-                </Button>
+          <div className="p-4 space-y-4">
+            {/* 地點選擇 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400 font-medium text-sm">
+                <MapPin className="h-4 w-4" />
+                <span>選擇監控地點</span>
               </div>
-              <div className="mt-2 mb-4 p-2 bg-yellow-900/30 border border-yellow-600/50 rounded-md text-sm text-yellow-200">
-                選擇要移除的串流，然後點擊「Delete」按鈕進行移除
-              </div>
-            </>
-          )}
+              <LocationSelector
+                selectedLocation={selectedLocation}
+                onLocationChange={handleLocationChange}
+              />
+            </div>
 
-          {/* 攝影機顯示控制列表 */}
-          <div className="border-t border-gray-600 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-white">攝影機顯示控制</h3>
-              {allStreams.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="desktop-select-all"
-                    checked={allStreams.every(({ index }) => cameraVisibility[index] !== false)}
-                    onChange={toggleAllCameras}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                  />
-                  <label htmlFor="desktop-select-all" className="text-xs text-white font-medium cursor-pointer">
-                    全選
-                  </label>
-                </div>
-              )}
+            {/* 分隔線 */}
+            <div className="border-t border-gray-600/50"></div>
+
+            {/* 攝影機選擇 */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-yellow-400 font-medium text-sm">
+                <Camera className="h-4 w-4" />
+                <span>選擇攝影機 (根據宮格限制)</span>
+              </div>
+              <CameraSelector
+                selectedCameras={selectedCameras}
+                onCameraChange={handleCameraChange}
+                availableCameras={getAvailableCameras()}
+                locationName={getLocationName()}
+                maxCameras={gridLayout}
+                gridLayout={gridLayout}
+              />
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {allStreams.length > 0 ? allStreams.map(({ stream, index, name }) => (
-                <div 
-                  key={index}
-                  className="flex items-center space-x-3 p-2 border rounded-md bg-gray-700/50 border-gray-600 hover:bg-gray-600/50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    id={`camera-${index}`}
-                    checked={cameraVisibility[index] !== false}
-                    onChange={() => toggleCameraVisibility(index)}
-                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-500 rounded focus:ring-blue-500 focus:ring-2"
-                  />
-                  <label 
-                    htmlFor={`camera-${index}`}
-                    className="flex-1 text-sm text-white font-medium cursor-pointer"
-                  >
-                    {name}
-                  </label>
-                  <div className={`w-2 h-2 rounded-full ${cameraVisibility[index] !== false ? 'bg-green-500' : 'bg-gray-400'}`} />
-                </div>
-              )) : (
-                <div className="text-center text-gray-400 py-4">
-                  尚無攝影機
-                </div>
-              )}
-            </div>
+
+
           </div>
         </ControlPanel>
       </div>
