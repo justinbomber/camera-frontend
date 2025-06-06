@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "cross-env NEXT_PUBLIC_STREAM_ENDPOINT=http://streamcamkeelong.mooo.com next dev",
     "dev:proxy": "cross-env NEXT_PUBLIC_STREAM_ENDPOINT=http://streamcamkeelong.mooo.com next dev",
+    "dev:local": "cross-env NEXT_PUBLIC_STREAM_ENDPOINT=http://localhost:8080 next dev",
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint"
@@ -16,7 +17,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "framer-motion": "^12.12.2",
+    "framer-motion": "^12.16.0",
     "h265web.js": "^2.2.2",
     "hls.js": "^1.5.1",
     "lucide-react": "^0.292.0",

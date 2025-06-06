@@ -10,6 +10,7 @@ import Sidebar, { SidebarMode } from '@/components/Sidebar'
 import { useDeviceDetection } from '@/lib/deviceUtils'
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 import PhoneSidebar from '@/components/PhoneSidebar'
+import UserMenu from '@/components/ui/UserMenu'
 
 export default function NotificationsPage() {
   const router = useRouter()
@@ -35,7 +36,14 @@ export default function NotificationsPage() {
         )}
         
         {/* 主內容區域 */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden relative">
+          {/* 右上角用戶選單 - 只在桌面設備顯示 */}
+          {!isMobile && (
+            <div className="absolute top-4 right-6 z-20">
+              <UserMenu />
+            </div>
+          )}
+          
           <div className="min-h-screen">
             <div className="container mx-auto px-6 py-8">
               {/* 頁面標題 */}

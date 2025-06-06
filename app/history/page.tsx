@@ -15,6 +15,7 @@ import CameraSelector from './components/CameraSelector'
 import LocationSelector, { locations } from './components/LocationSelector'
 import MasterProgressControl from './components/MasterProgressControl'
 import PhoneSidebar from '@/components/PhoneSidebar'
+import UserMenu from '@/components/ui/UserMenu'
 
 export default function HistoryPage() {
   const router = useRouter()
@@ -175,6 +176,11 @@ export default function HistoryPage() {
                 <Settings className="h-4 w-4 mr-2" />
                 參數選擇
               </Button>
+              
+              {/* 用戶選單 - 只在桌面設備顯示 */}
+              {!isMobile && (
+                <UserMenu />
+              )}
             </div>
           </motion.div>
 
