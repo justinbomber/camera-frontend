@@ -83,6 +83,7 @@ export class TokenManager {
     // 在服務器端總是返回 false，避免 hydration 錯誤
     if (!isBrowser) return false;
     return !!this.getToken();
+    // return true;
   }
 }
 

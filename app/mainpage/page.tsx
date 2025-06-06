@@ -19,6 +19,7 @@ import { useLocalStorage } from '@/lib/hooks/useLocalStorage'
 import LocationSelector, { locations } from "@/components/ControlPanel/LocationSelector"
 import CameraSelector from "@/components/ControlPanel/CameraSelector"
 import PhoneSidebar from "@/components/PhoneSidebar"
+import UserMenu from "@/components/ui/UserMenu"
 
 // Default streams to load on initial page load
 const STREAM_ENDPOINT = process.env.NEXT_PUBLIC_STREAM_ENDPOINT || "http://streamcamkeelong.mooo.com"
@@ -609,7 +610,7 @@ export default function MonitoringDashboard() {
       {/* 主內容區域 */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* 頁面標題區域 */}
-        <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-10">
+        <div className="bg-gray-900/90 backdrop-blur-sm shadow-sm py-3 px-4 flex items-center justify-between border-b border-gray-700/50 relative z-10 overflow-visible">
           <div className="flex items-center gap-3">
             {/* 手機端頭像按鈕 - 只在手機端顯示 */}
             {isMobile && (
@@ -630,7 +631,7 @@ export default function MonitoringDashboard() {
               <span className="text-xl font-bold text-white">即時影像</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative overflow-visible">
             {/* 宮格切換按鈕 - 只在桌面設備顯示 */}
             {!isMobile && (
               <>
@@ -678,6 +679,11 @@ export default function MonitoringDashboard() {
             >
               <Menu className="h-5 w-5" />
             </Button>
+            
+            {/* 用戶選單 - 只在桌面設備顯示 */}
+            {!isMobile && (
+              <UserMenu />
+            )}
           </div>
         </div>
 
